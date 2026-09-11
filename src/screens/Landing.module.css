@@ -1,0 +1,71 @@
+.landing {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.title {
+  font-size: 2rem;
+  line-height: 1.15;
+}
+
+.tagline {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.primary {
+  min-height: var(--tap);
+  padding: 0 24px;
+  margin-top: 8px;
+  align-self: flex-start;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.1s ease, transform 0.1s ease;
+}
+
+.primary:hover {
+  background: var(--accent-strong);
+}
+
+.primary:active {
+  transform: translateY(1px);
+  background: var(--accent-strong);
+}
+
+.primary:disabled {
+  background: var(--surface-raised);
+  color: var(--text-muted);
+  cursor: default;
+}
+
+/* Reserve space so switching from idle to checking to result holds layout. */
+.status {
+  min-height: 96px;
+}
+
+.statusText {
+  line-height: 1.4;
+}
+
+.resultCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mode {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}

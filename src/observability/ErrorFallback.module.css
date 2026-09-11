@@ -1,0 +1,46 @@
+.wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 20px;
+}
+
+.card {
+  width: 100%;
+  max-width: var(--content-max);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.heading {
+  font-size: 1.4rem;
+  line-height: 1.2;
+}
+
+.body {
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.button {
+  align-self: flex-start;
+  margin-top: 4px;
+  min-height: var(--tap);
+  padding: 0 20px;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.button:active {
+  background: var(--accent-strong);
+}

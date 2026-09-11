@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#0f1720" />
+    <meta
+      name="description"
+      content="Turn a walk into a game: guess which way home is, then check yourself against the truth and watch your sense of direction sharpen."
+    />
+    <title>The Inner Compass</title>
+    <!-- Runtime config. Loaded before the bundle so window.__ENV__ exists at startup. -->
+    <script src="/env-config.js"></script>
+    <!-- Critical boot styles: real content is painted and styled before the
+         module bundle loads. Kept tiny and in sync with styles/global.css. -->
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      html,
+      body {
+        margin: 0;
+        background: #0f1720;
+        color: #e8edf2;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      #root {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      .boot-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        font-weight: 600;
+        font-size: 0.95rem;
+        letter-spacing: 0.01em;
+      }
+      .boot-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 12px;
+        padding: 24px 20px;
+        max-width: 34rem;
+        margin: 0 auto;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .boot-title {
+        margin: 0;
+        font-size: 2rem;
+        line-height: 1.15;
+      }
+      .boot-tagline {
+        margin: 0;
+        font-size: 1.1rem;
+        color: #aab6c2;
+        line-height: 1.4;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Static first paint: real content shows before the JS bundle loads.
+         React replaces #root on mount. -->
+    <div id="root">
+      <header class="boot-header">
+        <span class="boot-brand">The Inner Compass</span>
+      </header>
+      <main class="boot-main">
+        <h1 class="boot-title">The Inner Compass</h1>
+        <p class="boot-tagline">
+          Find out how well you know which way things really are.
+        </p>
+      </main>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
