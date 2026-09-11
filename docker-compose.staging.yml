@@ -1,0 +1,32 @@
+name: the-inner-compass-staging
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: the-inner-compass-staging-web
+    expose:
+      - "80"
+    environment:
+      # All optional. The app runs correctly when these are empty.
+      SENTRY_DSN: "${SENTRY_DSN:-}"
+      UMAMI_URL: "${UMAMI_URL:-}"
+      UMAMI_WEBSITE_ID: "${UMAMI_WEBSITE_ID:-}"
+      # Demo seeding lands in a later epic. This app has no data model yet, so
+      # the flag is a no-op for now. Kept here to honor the staging contract.
+      SEED_DEMO: "1"
+    networks:
+      - default
+      - staging
+    mem_limit: 512m
+    oom_score_adj: 800
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/ >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+networks:
+  staging:
+    external: true
+    name: factory-staging-net
