@@ -2,12 +2,19 @@
 
 Your phone's GPS is great at telling you where to go. It is also quietly
 eroding your own sense of direction. The Inner Compass turns a walk into a
-game: you guess which way home is before the map loads, then check your guess
-against the truth and watch your sense of direction sharpen over weeks.
+game: you guess which way your start is before the truth loads, then measure
+how close you were. It scores your sense of direction against the ground, so
+the number is one you can trust.
 
-This repository is the foundation of that app. It ships the mobile-first shell,
-the device sensor and geolocation layer that later features build on, and the
-staging deploy setup. The guess-and-reveal game itself arrives in later work.
+Here is the loop. Mark where you are standing, walk away, then open the app and
+guess the way back. On a phone with a compass you point and lock a direction. On
+any device you type how far you think you walked. One location fix reveals the
+truth: how far off your direction was, which way your start really is, and how
+your distance guess compared. Nothing about the answer shows until you commit
+your guess, so the number is honest.
+
+The app is a static single-page app. No account, no backend, no saved data. Each
+walk lives in memory for the session only.
 
 ## Run it locally
 
@@ -21,9 +28,9 @@ npm run dev
 ```
 
 Vite prints a local URL (usually http://localhost:5173). Open it on your phone
-or in a desktop browser. The compass check needs a real device with a
-magnetometer to return a live reading. On a desktop it reports that no compass
-is available and falls back to distance.
+or in a desktop browser. Pointing and locking a direction needs a real device
+with a magnetometer. On a desktop the flow runs in distance-only mode, so you
+can still walk the full loop and see a reveal.
 
 ## Run it like production
 
@@ -69,10 +76,14 @@ at runtime. Nothing secret belongs in the repository.
 
 ## Where the code lives
 
-- `src/screens/` and `src/shell/` hold the landing screen and the app layout.
+- `src/screens/` holds the landing screen and `GuessFlow.tsx`, the one screen at
+  `/guess` that runs the whole loop as a phase machine. `src/shell/` is the app
+  layout.
+- `src/game/` is the pure logic: `geoMath.ts` (bearing and distance),
+  `scoring.ts` (honest, floor-aware buckets and verdicts), and `nudges.ts`.
 - `src/sensors/` is the sensor layer: `heading.ts` classifies compass quality
-  per device, and `geolocation.ts` wraps a single location fix with a strict
-  timeout. Both are pure of side effects until you call them and never hang.
+  per device, `liveHeading.ts` streams the live heading for the aim dial, and
+  `geolocation.ts` wraps a single location fix with a strict timeout.
 - `src/config/`, `src/analytics/`, `src/observability/` handle runtime config,
   Umami, and Sentry, each a safe no-op when its config is missing.
 
@@ -86,8 +97,10 @@ npm test
 ```
 
 This runs the full Vitest suite (unit and component tests in jsdom). It covers
-the sensor classification, the geolocation wrapper, the config and analytics
-guards, and the landing screen behavior.
+the geo math and scoring, the sensor classification, the geolocation wrapper,
+the config and analytics guards, and the whole guess-and-reveal flow: the commit
+gate, both bearing and distance-only paths, every designed loading and error
+state, and the guided first run.
 
 ## License
 
