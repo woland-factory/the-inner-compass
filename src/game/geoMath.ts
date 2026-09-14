@@ -45,6 +45,12 @@ export function bearingErrorDeg(guessDeg: number, trueDeg: number): number {
   return raw > 180 ? 360 - raw : raw;
 }
 
+// Signed angular difference in [-180, 180]. Positive when the guess sits
+// clockwise of true (to the right); its magnitude equals bearingErrorDeg.
+export function signedBearingErrorDeg(guessDeg: number, trueDeg: number): number {
+  return ((guessDeg - trueDeg + 540) % 360) - 180;
+}
+
 // Ratio of the guessed distance to the true distance.
 export function distanceRatio(guessM: number, trueM: number): number {
   return guessM / trueM;

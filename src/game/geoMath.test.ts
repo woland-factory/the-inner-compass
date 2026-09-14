@@ -5,6 +5,7 @@ import {
   distanceRatio,
   haversineDistanceM,
   initialBearingDeg,
+  signedBearingErrorDeg,
 } from "./geoMath";
 
 describe("initialBearingDeg", () => {
@@ -80,6 +81,41 @@ describe("bearingErrorDeg", () => {
   it("is zero for equal bearings", () => {
     expect(bearingErrorDeg(0, 0)).toBe(0);
     expect(bearingErrorDeg(123, 123)).toBe(0);
+  });
+});
+
+describe("signedBearingErrorDeg", () => {
+  it("is positive when the guess sits clockwise of true (right)", () => {
+    expect(signedBearingErrorDeg(10, 350)).toBe(20);
+  });
+
+  it("is negative when the guess sits counter-clockwise of true (left)", () => {
+    expect(signedBearingErrorDeg(350, 10)).toBe(-20);
+  });
+
+  it("caps at ±180 for opposite bearings", () => {
+    expect(Math.abs(signedBearingErrorDeg(90, 270))).toBe(180);
+  });
+
+  it("is zero for equal bearings", () => {
+    expect(signedBearingErrorDeg(0, 0)).toBe(0);
+    expect(signedBearingErrorDeg(123, 123)).toBe(0);
+  });
+
+  it("has a magnitude equal to bearingErrorDeg", () => {
+    const pairs: Array<[number, number]> = [
+      [10, 350],
+      [350, 10],
+      [90, 270],
+      [45, 200],
+      [300, 20],
+    ];
+    for (const [g, t] of pairs) {
+      expect(Math.abs(signedBearingErrorDeg(g, t))).toBeCloseTo(
+        bearingErrorDeg(g, t),
+        10,
+      );
+    }
   });
 });
 
