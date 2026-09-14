@@ -13,8 +13,21 @@ truth: how far off your direction was, which way your start really is, and how
 your distance guess compared. Nothing about the answer shows until you commit
 your guess, so the number is honest.
 
-The app is a static single-page app. No account, no backend, no saved data. Each
-walk lives in memory for the session only.
+The app is a static single-page app. No account, no backend, no server. Your
+record stays on your device.
+
+## Your record
+
+Every measurable guess is saved to your browser and builds a record over time.
+Open `Record` in the header to see it. A distance calibration chart leads,
+plotting how your guessed distance compares to the truth. A bearing error chart
+follows. Once you have a handful of guesses, plain sentences describe your own
+pattern, like whether your distances tend to run long or your bearings lean to
+one side. Below that sits your guess history, newest first.
+
+The record lives only in your browser. Use `Export` to save it as a JSON file
+you own, and `Import` to load that file back (importing replaces the current
+record). Nothing is ever sent to a server.
 
 ## Run it locally
 
@@ -76,11 +89,14 @@ at runtime. Nothing secret belongs in the repository.
 
 ## Where the code lives
 
-- `src/screens/` holds the landing screen and `GuessFlow.tsx`, the one screen at
-  `/guess` that runs the whole loop as a phase machine. `src/shell/` is the app
-  layout.
+- `src/screens/` holds the landing screen, `GuessFlow.tsx` (the one screen at
+  `/guess` that runs the whole loop as a phase machine), and `Record.tsx` (the
+  record and trends at `/record`). `src/shell/` is the app layout.
 - `src/game/` is the pure logic: `geoMath.ts` (bearing and distance),
   `scoring.ts` (honest, floor-aware buckets and verdicts), and `nudges.ts`.
+- `src/record/` is the record layer: `store.ts` (defensive localStorage
+  persistence), `signature.ts` (plain sentences from your own data), and
+  `recordFile.ts` (export and import format with boundary validation).
 - `src/sensors/` is the sensor layer: `heading.ts` classifies compass quality
   per device, `liveHeading.ts` streams the live heading for the aim dial, and
   `geolocation.ts` wraps a single location fix with a strict timeout.
@@ -98,9 +114,11 @@ npm test
 
 This runs the full Vitest suite (unit and component tests in jsdom). It covers
 the geo math and scoring, the sensor classification, the geolocation wrapper,
-the config and analytics guards, and the whole guess-and-reveal flow: the commit
+the config and analytics guards, the whole guess-and-reveal flow (the commit
 gate, both bearing and distance-only paths, every designed loading and error
-state, and the guided first run.
+state, and the guided first run), and the record: persistence, the signature
+sentences, the export and import format, and the record screen with its charts,
+pagination, and import validation.
 
 ## License
 
