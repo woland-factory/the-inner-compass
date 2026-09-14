@@ -53,8 +53,18 @@ describe("appendGuess and loadGuesses", () => {
   });
 
   it("keeps the most recent rows and drops the oldest past the cap", () => {
-    for (let i = 0; i < MAX_STORED_GUESSES + 5; i += 1) {
-      appendGuess(makeRow({ id: `row-${i}`, timestamp: i }));
+    // Pre-seed a full record, then append past the cap on the write path.
+    const seed = Array.from({ length: MAX_STORED_GUESSES }, (_, i) =>
+      makeRow({ id: `row-${i}`, timestamp: i }),
+    );
+    replaceGuesses(seed);
+    for (let i = 0; i < 5; i += 1) {
+      appendGuess(
+        makeRow({
+          id: `row-${MAX_STORED_GUESSES + i}`,
+          timestamp: MAX_STORED_GUESSES + i,
+        }),
+      );
     }
     const stored = loadGuesses();
     expect(stored).toHaveLength(MAX_STORED_GUESSES);

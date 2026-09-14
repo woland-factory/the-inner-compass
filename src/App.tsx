@@ -3,6 +3,7 @@ import { ErrorBoundary } from "@sentry/react";
 import { Shell } from "./shell/Shell";
 import { Landing } from "./screens/Landing";
 import { GuessFlow } from "./screens/GuessFlow";
+import { Record } from "./screens/Record";
 import { ErrorFallback } from "./observability/ErrorFallback";
 
 export function App() {
@@ -13,6 +14,7 @@ export function App() {
           <Route element={<Shell />}>
             <Route path="/" element={<Landing />} />
             <Route path="/guess" element={<GuessFlow />} />
+            <Route path="/record" element={<Record />} />
             {/* /reveal stays reserved; the loop lives entirely on /guess. */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
