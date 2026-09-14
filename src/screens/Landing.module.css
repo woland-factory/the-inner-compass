@@ -20,12 +20,16 @@
   padding: 0 24px;
   margin-top: 8px;
   align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: none;
   border-radius: var(--radius);
   background: var(--accent);
   color: var(--accent-contrast);
   font-weight: 600;
   font-size: 1rem;
+  text-decoration: none;
   cursor: pointer;
   transition: background 0.1s ease, transform 0.1s ease;
 }
