@@ -265,6 +265,17 @@
   min-width: 140px;
 }
 
+/* Subordinate path to the record, below the primary reveal actions. */
+.recordLink {
+  align-self: flex-start;
+  margin-top: 10px;
+  min-height: var(--tap);
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
 /* Guided first run: a small checklist that ticks itself off. */
 .walkthrough {
   background: var(--surface-raised);

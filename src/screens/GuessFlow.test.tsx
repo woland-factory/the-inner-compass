@@ -8,6 +8,7 @@ import {
 } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { GuessFlow } from "./GuessFlow";
+import { loadGuesses } from "../record/store";
 import * as heading from "../sensors/heading";
 import * as geolocation from "../sensors/geolocation";
 import * as liveHeading from "../sensors/liveHeading";
@@ -363,6 +364,89 @@ describe("GuessFlow guided first run", () => {
     expect(
       screen.queryByText("Mark where you are standing now."),
     ).toBeNull();
+  });
+});
+
+describe("GuessFlow persistence", () => {
+  it("appends one bearing row on a measurable reveal", async () => {
+    renderFlow();
+    await reachGuess(COMPASS_OK, "home");
+    fireEvent.click(screen.getByRole("button", { name: "Lock direction" }));
+    typeDistance("100");
+    getPos.mockResolvedValueOnce(REVEAL_FIX);
+    fireEvent.click(screen.getByRole("button", { name: "Reveal" }));
+    await screen.findByTestId("reveal");
+
+    const rows = loadGuesses();
+    expect(rows).toHaveLength(1);
+    const row = rows[0];
+    expect(row.mode).toBe("bearing");
+    expect(row.targetKind).toBe("home");
+    expect(row.guessedBearingDeg).toBe(0);
+    expect(row.trueBearingDeg).toBeCloseTo(270, 1);
+    expect(row.bearingErrorDeg).toBeCloseTo(90, 1);
+    expect(row.guessedDistanceM).toBe(100);
+    expect(row.trueDistanceM).toBeGreaterThan(100);
+    expect(row.headingAccuracyDeg).toBe(12);
+  });
+
+  it("appends one distance-only row with null bearing fields", async () => {
+    renderFlow();
+    await reachGuess(COMPASS_OK, "spot");
+    fireEvent.click(screen.getByRole("button", { name: "Skip direction" }));
+    typeDistance("100");
+    getPos.mockResolvedValueOnce(REVEAL_FIX);
+    fireEvent.click(screen.getByRole("button", { name: "Reveal" }));
+    await screen.findByTestId("reveal");
+
+    const rows = loadGuesses();
+    expect(rows).toHaveLength(1);
+    expect(rows[0].mode).toBe("distance_only");
+    expect(rows[0].guessedBearingDeg).toBeNull();
+    expect(rows[0].bearingErrorDeg).toBeNull();
+    expect(rows[0].signedBearingErrorDeg).toBeNull();
+  });
+
+  it("appends nothing on a barely-moved reveal", async () => {
+    renderFlow();
+    await reachGuess(COMPASS_OK, "home");
+    fireEvent.click(screen.getByRole("button", { name: "Lock direction" }));
+    typeDistance("100");
+    getPos.mockResolvedValueOnce({ ...ANCHOR_FIX, timestamp: 3 });
+    fireEvent.click(screen.getByRole("button", { name: "Reveal" }));
+    await screen.findByTestId("reveal");
+
+    expect(loadGuesses()).toHaveLength(0);
+  });
+
+  it("does not duplicate the row when the reveal re-renders", async () => {
+    const view = renderFlow();
+    await reachGuess(COMPASS_OK, "home");
+    fireEvent.click(screen.getByRole("button", { name: "Lock direction" }));
+    typeDistance("100");
+    getPos.mockResolvedValueOnce(REVEAL_FIX);
+    fireEvent.click(screen.getByRole("button", { name: "Reveal" }));
+    await screen.findByTestId("reveal");
+
+    view.rerender(
+      <MemoryRouter initialEntries={["/guess"]}>
+        <GuessFlow />
+      </MemoryRouter>,
+    );
+    expect(loadGuesses()).toHaveLength(1);
+  });
+
+  it("shows a See your record link that points to /record", async () => {
+    renderFlow();
+    await reachGuess(COMPASS_OK, "home");
+    fireEvent.click(screen.getByRole("button", { name: "Lock direction" }));
+    typeDistance("100");
+    getPos.mockResolvedValueOnce(REVEAL_FIX);
+    fireEvent.click(screen.getByRole("button", { name: "Reveal" }));
+    const reveal = await screen.findByTestId("reveal");
+
+    const link = within(reveal).getByRole("link", { name: "See your record" });
+    expect(link).toHaveAttribute("href", "/record");
   });
 });
 

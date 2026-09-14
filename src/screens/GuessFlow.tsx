@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   detectHeadingCapability,
   guessModeFor,
@@ -13,8 +14,10 @@ import { subscribeHeading } from "../sensors/liveHeading";
 import {
   bearingErrorDeg,
   compassPoint8,
+  distanceRatio,
   haversineDistanceM,
   initialBearingDeg,
+  signedBearingErrorDeg,
 } from "../game/geoMath";
 import {
   describeBearing,
@@ -23,6 +26,7 @@ import {
   isMeasurable,
 } from "../game/scoring";
 import { nudgeAt } from "../game/nudges";
+import { appendGuess, makeGuessId, type StoredGuess } from "../record/store";
 import styles from "./GuessFlow.module.css";
 
 type Phase = "setup" | "guess" | "fixing" | "reveal" | "error";
@@ -169,12 +173,52 @@ export function GuessFlow() {
       return;
     }
 
+    // Persist one row per measurable reveal, on the fix event so it happens
+    // once and never on re-render. This runs before the reveal renders and must
+    // never delay it: the work is a bounded synchronous write.
+    persistReveal(fix);
+
     setRevealFix(fix);
     if (!seenWalkthrough) {
       markWalkthroughSeen();
       setSeenWalkthrough(true);
     }
     setPhase("reveal");
+  }
+
+  function persistReveal(fix: Extract<GeoResult, { ok: true }>) {
+    if (!anchor || distanceM === null) return;
+
+    const current = { lat: fix.lat, lng: fix.lng };
+    const target = { lat: anchor.lat, lng: anchor.lng };
+    const trueBearingDeg = initialBearingDeg(current, target);
+    const trueDistanceM = haversineDistanceM(current, target);
+
+    // A barely-moved reveal has no meaningful data and is not stored.
+    if (!isMeasurable(trueDistanceM, fix.accuracyM)) return;
+
+    const isBearing = guessMode === "bearing" && lockedBearing !== null;
+    const timestamp = Date.now();
+    const g: StoredGuess = {
+      id: makeGuessId(timestamp),
+      timestamp,
+      targetKind: anchor.kind,
+      mode: guessMode,
+      guessedBearingDeg: isBearing ? lockedBearing : null,
+      trueBearingDeg,
+      bearingErrorDeg: isBearing
+        ? bearingErrorDeg(lockedBearing, trueBearingDeg)
+        : null,
+      signedBearingErrorDeg: isBearing
+        ? signedBearingErrorDeg(lockedBearing, trueBearingDeg)
+        : null,
+      guessedDistanceM: distanceM,
+      trueDistanceM,
+      distanceRatio: distanceRatio(distanceM, trueDistanceM),
+      headingAccuracyDeg: floorFor(capability),
+      nudgeIndex,
+    };
+    appendGuess(g);
   }
 
   function resetGuessInputs() {
@@ -561,22 +605,27 @@ function RevealActions(props: {
   onNewStart: () => void;
 }) {
   return (
-    <div className={styles.actions}>
-      <button
-        type="button"
-        className={styles.primary}
-        onClick={props.onGuessAgain}
-      >
-        Guess again
-      </button>
-      <button
-        type="button"
-        className={styles.secondary}
-        onClick={props.onNewStart}
-      >
-        New start
-      </button>
-    </div>
+    <>
+      <div className={styles.actions}>
+        <button
+          type="button"
+          className={styles.primary}
+          onClick={props.onGuessAgain}
+        >
+          Guess again
+        </button>
+        <button
+          type="button"
+          className={styles.secondary}
+          onClick={props.onNewStart}
+        >
+          New start
+        </button>
+      </div>
+      <Link to="/record" className={styles.recordLink}>
+        See your record
+      </Link>
+    </>
   );
 }
 
