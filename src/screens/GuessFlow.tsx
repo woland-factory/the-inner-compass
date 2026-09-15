@@ -166,18 +166,21 @@ export function GuessFlow() {
     // Persist one row per measurable reveal, on the fix event so it happens
     // once and never on re-render. This runs before the reveal renders and must
     // never delay it: the work is a bounded synchronous write.
-    persistReveal(fix);
+    const measurable = persistReveal(fix);
 
     setRevealFix(fix);
-    if (!seenWalkthrough) {
+    // The walkthrough retires on the first completed real guess. A barely-moved
+    // reveal is not one: it keeps guiding until a measurable reveal lands.
+    if (measurable && !seenWalkthrough) {
       markWalkthroughSeen();
       setSeenWalkthrough(true);
     }
     setPhase("reveal");
   }
 
-  function persistReveal(fix: Extract<GeoResult, { ok: true }>) {
-    if (!anchor || distanceM === null) return;
+  // Returns whether the reveal was measurable (and therefore recorded).
+  function persistReveal(fix: Extract<GeoResult, { ok: true }>): boolean {
+    if (!anchor || distanceM === null) return false;
 
     const current = { lat: fix.lat, lng: fix.lng };
     const target = { lat: anchor.lat, lng: anchor.lng };
@@ -185,7 +188,7 @@ export function GuessFlow() {
     const trueDistanceM = haversineDistanceM(current, target);
 
     // A barely-moved reveal has no meaningful data and is not stored.
-    if (!isMeasurable(trueDistanceM, fix.accuracyM)) return;
+    if (!isMeasurable(trueDistanceM, fix.accuracyM)) return false;
 
     const isBearing = guessMode === "bearing" && lockedBearing !== null;
     const timestamp = Date.now();
@@ -209,6 +212,7 @@ export function GuessFlow() {
       nudgeIndex,
     };
     appendGuess(g);
+    return true;
   }
 
   function resetGuessInputs() {

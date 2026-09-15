@@ -327,6 +327,38 @@ describe("GuessFlow nudges", () => {
 });
 
 describe("GuessFlow guided first run", () => {
+  it("shows four one-sentence steps pinned to the flow's real controls", async () => {
+    renderFlow();
+    const walkthrough = screen.getByRole("complementary", {
+      name: "Getting started",
+    });
+    const items = within(walkthrough).getAllByRole("listitem");
+    expect(items).toHaveLength(4);
+    expect(items[0]).toHaveTextContent("Mark where you are standing now.");
+    expect(items[1]).toHaveTextContent("Walk somewhere, then open this again.");
+    expect(items[2]).toHaveTextContent(
+      "Point your phone back at your start and lock it.",
+    );
+    expect(items[3]).toHaveTextContent("Type the distance, then tap Reveal.");
+
+    // Each step names a control that really exists in the flow.
+    expect(
+      screen.getByRole("button", { name: "Mark this spot" }),
+    ).toHaveAttribute("data-step", "mark");
+    await reachGuess(COMPASS_OK, "spot");
+    expect(
+      screen.getByRole("button", { name: "Lock direction" }),
+    ).toHaveAttribute("data-step", "lock");
+    expect(screen.getByLabelText("How far away is it?")).toHaveAttribute(
+      "data-step",
+      "distance",
+    );
+    expect(screen.getByRole("button", { name: "Reveal" })).toHaveAttribute(
+      "data-step",
+      "reveal",
+    );
+  });
+
   it("renders the walkthrough when unseen and is skippable", async () => {
     renderFlow();
     expect(
@@ -364,6 +396,27 @@ describe("GuessFlow guided first run", () => {
     expect(
       screen.queryByText("Mark where you are standing now."),
     ).toBeNull();
+  });
+
+  it("does not retire the walkthrough on a barely-moved reveal", async () => {
+    const view = renderFlow();
+    await reachGuess(COMPASS_OK, "home");
+    fireEvent.click(screen.getByRole("button", { name: "Lock direction" }));
+    typeDistance("100");
+
+    // Reveal fix at the anchor: not measurable, so no real guess completed.
+    getPos.mockResolvedValueOnce({ ...ANCHOR_FIX, timestamp: 3 });
+    fireEvent.click(screen.getByRole("button", { name: "Reveal" }));
+    await screen.findByTestId("reveal");
+
+    expect(localStorage.getItem("ic_seen_walkthrough")).toBeNull();
+
+    // The next attempt still guides the user.
+    view.unmount();
+    renderFlow();
+    expect(
+      screen.getByText("Mark where you are standing now."),
+    ).toBeInTheDocument();
   });
 });
 
