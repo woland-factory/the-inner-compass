@@ -19,14 +19,10 @@ import {
   initialBearingDeg,
   signedBearingErrorDeg,
 } from "../game/geoMath";
-import {
-  describeBearing,
-  describeDistance,
-  formatDistance,
-  isMeasurable,
-} from "../game/scoring";
+import { describeBearing, isMeasurable } from "../game/scoring";
 import { nudgeAt } from "../game/nudges";
 import { appendGuess, makeGuessId, type StoredGuess } from "../record/store";
+import { RevealMeasurement } from "./RevealMeasurement";
 import styles from "./GuessFlow.module.css";
 
 type Phase = "setup" | "guess" | "fixing" | "reveal" | "error";
@@ -47,12 +43,6 @@ const FIX_ERROR_COPY: Record<GeoReason, string> = {
   unsupported:
     "This browser cannot share location. Open the app in Safari or Chrome.",
 };
-
-const VERDICT_COPY = {
-  spot_on: "Spot on.",
-  short: "You guessed short.",
-  long: "You guessed long.",
-} as const;
 
 function parseDistanceM(raw: string, unit: Unit): number | null {
   const value = Number(raw);
@@ -556,39 +546,14 @@ function Reveal(props: {
         )
       : null;
 
-  const distance =
-    props.distanceM !== null
-      ? describeDistance(props.distanceM, trueDist)
-      : null;
-
   return (
     <div className={styles.revealCard}>
-      {bearing && <h1 className={styles.headline}>{bearing.bucket}</h1>}
-      <p className={styles.direction}>It was to the {word}.</p>
-
-      {bearing &&
-        (bearing.withinFloor ? (
-          <p className={styles.detail}>
-            Inside your compass's ±{props.floorDeg}° margin.
-          </p>
-        ) : (
-          <p className={styles.detail}>{Math.round(bearing.errorDeg)}° off.</p>
-        ))}
-      {bearing && (
-        <p className={styles.caption}>
-          Your compass reads to about ±{props.floorDeg}°.
-        </p>
-      )}
-
-      {distance && props.distanceM !== null && (
-        <div className={styles.distanceBlock}>
-          <p className={styles.distanceLine}>
-            You guessed {formatDistance(props.distanceM)}. It was{" "}
-            {formatDistance(trueDist)}.
-          </p>
-          <p className={styles.verdict}>{VERDICT_COPY[distance.verdict]}</p>
-        </div>
-      )}
+      <RevealMeasurement
+        bearing={bearing}
+        directionWord={word}
+        guessedDistanceM={props.distanceM}
+        trueDistanceM={trueDist}
+      />
 
       <p className={styles.nudge}>For next time: {nudgeAt(props.nudgeIndex)}</p>
 
