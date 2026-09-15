@@ -13,6 +13,11 @@ truth: how far off your direction was, which way your start really is, and how
 your distance guess compared. Nothing about the answer shows until you commit
 your guess, so the number is honest.
 
+Curious before your first walk? Tap `Try a sample guess` on the landing screen
+to see a built-in guess scored by the real engine. And on your first walk a
+short checklist on the guess screen ticks off each step until your first real
+guess lands. You can skip it any time.
+
 The app is a static single-page app. No account, no backend, no server. Your
 record stays on your device.
 
