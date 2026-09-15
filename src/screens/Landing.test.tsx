@@ -1,10 +1,12 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { Landing } from "./Landing";
+import { loadGuesses } from "../record/store";
 
 afterEach(() => {
   cleanup();
+  localStorage.clear();
 });
 
 function renderLanding() {
@@ -36,5 +38,49 @@ describe("Landing", () => {
     expect(
       screen.queryByRole("button", { name: /compass/i }),
     ).not.toBeInTheDocument();
+  });
+
+  it("hides the sample panel until the sample button is tapped", () => {
+    renderLanding();
+    expect(
+      screen.queryByRole("heading", { level: 2, name: "A sample guess" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/° off\./)).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Try a sample guess" }),
+    ).toBeInTheDocument();
+  });
+
+  it("reveals a real scored measurement on tap", () => {
+    renderLanding();
+    fireEvent.click(screen.getByRole("button", { name: "Try a sample guess" }));
+
+    expect(
+      screen.getByRole("heading", { level: 2, name: "A sample guess" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Here is a real guess scored against the truth."),
+    ).toBeInTheDocument();
+    // A concrete, non-zero degrees-off line from the real engine.
+    expect(screen.getByText(/^[1-9]\d*° off\.$/)).toBeInTheDocument();
+    // A real distance comparison with a verdict.
+    expect(
+      screen.getByText(/^You guessed .+\. It was .+\.$/),
+    ).toBeInTheDocument();
+    expect(screen.getByText("You guessed long.")).toBeInTheDocument();
+    expect(screen.getByText("Now measure your own.")).toBeInTheDocument();
+    // The landing has no device compass, so its caption stays off.
+    expect(
+      screen.queryByText(/Your compass reads to about/),
+    ).not.toBeInTheDocument();
+  });
+
+  it("stores nothing when the sample is revealed", () => {
+    renderLanding();
+    fireEvent.click(screen.getByRole("button", { name: "Try a sample guess" }));
+
+    expect(loadGuesses()).toEqual([]);
+    expect(localStorage.getItem("ic_seen_walkthrough")).toBeNull();
+    expect(localStorage.length).toBe(0);
   });
 });

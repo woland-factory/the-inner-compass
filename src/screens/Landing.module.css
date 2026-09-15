@@ -49,6 +49,43 @@
   cursor: default;
 }
 
+/* Subordinate to the primary Start a walk: outlined, not filled. */
+.sampleButton {
+  min-height: var(--tap);
+  padding: 0 24px;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.1s ease, transform 0.1s ease;
+}
+
+.sampleButton:hover {
+  background: var(--surface-raised);
+}
+
+.sampleButton:active {
+  transform: translateY(1px);
+  background: var(--surface-raised);
+}
+
+.sampleHeading {
+  font-size: 1.1rem;
+}
+
+.sampleIntro,
+.sampleClose {
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
 /* Reserve space so switching from idle to checking to result holds layout. */
 .status {
   min-height: 96px;
