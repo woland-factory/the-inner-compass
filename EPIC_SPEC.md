@@ -1,13 +1,19 @@
-# EPIC SPEC — The record: persistence, trends, error signature, export
+# EPIC SPEC — First run: guided walk-through and sample reveal
 
-The compounding half of The Inner Compass. Until now every guess vanished when
-the tab closed. This EPIC keeps them: each committed, measurable reveal is
-appended to a local time series, and a new `/record` screen turns that series
-into the durable artifact the product promises. It leads with distance-ratio
-calibration (the hero metric the evidence backs), shows bearing error second,
-states plain error-signature sentences once there is enough data, and lets the
-user carry the whole record out as a file and back in. No server, no account, no
-sync. The record lives on the device and in a file the user owns.
+A brand-new visitor must see this product's one true trick within a minute, on
+the phone already in their pocket, with no account and no walk required. This
+EPIC delivers that in two parts. First, a **sample guess** on the landing screen:
+one tap runs the real scoring engine on built-in coordinates and shows a real,
+non-zero measurement (how far off a direction was, which way the start really
+was, how the distance guess compared). Second, the **guided path** that already
+walks a first-time user through their own first real guess is tightened so it
+disappears at exactly the right moment and is proven by test.
+
+The guided walk-through already ships in `GuessFlow.tsx` (a four-step checklist
+that ticks itself off, skippable, gated on `ic_seen_walkthrough`). This EPIC does
+NOT rebuild it. It makes one correctness fix to when it retires, and it adds the
+tests that prove every clause of the acceptance criteria. The sample reveal is
+the net-new build.
 
 ---
 
@@ -17,58 +23,63 @@ sync. The record lives on the device and in a file the user owns.
 sense of direction in under a minute, no install, no account, on the phone
 already in your pocket.**
 
-What that demands of THIS EPIC: persistence must never slow the loop or the
-record screen. Writing a guess happens in one synchronous, bounded step at the
-moment of reveal, and it must never block or delay the reveal the user is
-reading. The record screen must render its real content fast (parse once, render
-a bounded page and a windowed chart), never a blank page and never a list that
-gets slower with every walk. And the honesty bar carries straight over from the
-loop: the record shows only what the user's own data supports. It never flatters
-with a promise of improvement, never invents precision below the compass floor,
-and never claims a pattern the numbers do not show. A record the user trusts is
-the whole reason it compounds.
+What that demands of THIS EPIC: the sample reveal IS the immediacy promise made
+literal. The landing's first meaningful render is instant static content, and the
+sample is one tap away with a client-side, synchronous compute that shows a real
+scored measurement in well under a second. No location permission, no sensor, no
+network, no typing. The measurement it shows must be the REAL reveal (the same
+scoring engine and the same words the live loop uses) run on built-in
+coordinates, never hardcoded result text and never a zeroed or trivial outcome. A
+sample that reveals "0° off" or "spot on" teaches nothing and fails the bar. And
+the honesty that the rest of the app is built on carries over: the sample counts
+for nothing (it is never stored in the user's record and never marks the
+walk-through as seen), so the record the differentiator compounds into stays
+truthful.
 
 ---
 
 ## Scope
 
 ### In scope
-- **Persist every measurable guess.** On each reveal that clears the
-  measurability guard, append one `StoredGuess` to a localStorage time series.
-  A "barely moved" reveal (fails `isMeasurable`) has no meaningful data and is
-  NOT stored.
-- **A `/record` screen** with, in this vertical order:
-  1. A **distance-ratio calibration chart** as the hero (largest, first).
-  2. A **bearing-error chart** as the secondary surface.
-  3. **Error-signature statements** derived from the user's own data, shown only
-     past a stated guess threshold.
-  4. A **paginated guess history** list, newest first, that never renders the
-     whole record at once.
-  5. A subordinate **export / import** section.
-- **Designed empty and low-data states** for the record screen (zero guesses,
-  and below the signature threshold).
-- **File export**: download the whole record as one JSON file.
-- **File import**: read a record file, validate it at the boundary, and REPLACE
-  the local record with it (a round-trip is identical).
-- **Reachability**: a subordinate nav link so `/record` is reachable from the
-  app shell, plus a subordinate "See your record" link on the reveal.
+- **A sample guess on the landing screen.** A subordinate `Try a sample guess`
+  control that, on tap, reveals inline a real scored measurement computed by the
+  existing engine (`initialBearingDeg`, `haversineDistanceM`, `bearingErrorDeg`,
+  `describeBearing`, `describeDistance`, `compassPoint8`, `formatDistance`) from
+  a set of built-in constants. It shows a non-zero bearing error and a non-zero,
+  measurable distance result, using the same phrasing the live reveal uses.
+- **A shared reveal-measurement view.** Extract the presentational measurement
+  body of the live reveal (bucket headline, direction word, degrees-off line,
+  distance line, verdict) into one component used by BOTH the live loop and the
+  sample, so the sample is the real reveal and the copy has a single source.
+- **Built-in sample data module** (`src/game/sampleGuess.ts`): the fixed
+  coordinates and guess, plus a pure function that computes the measurement. Unit
+  tested for non-zero, measurable, honest output.
+- **Guided-path retire fix.** The walk-through is marked seen (retired forever)
+  on the first *measurable* reveal, the same event that records a real guess. A
+  barely-moved reveal (fails `isMeasurable`) no longer retires it, because the
+  user has not completed a real guess yet.
+- **Tests that prove every acceptance criterion** for the guided path and the
+  sample.
+- **A short, plain README line** naming the sample and the guided first run.
 
 ### Out of scope (binding non-goals — do NOT build)
-- **No cloud sync.** Nothing leaves the device except the file the user
-  explicitly exports.
-- **No accounts, no server, no auth surface.** The app stays a static SPA.
-- **No cross-device merge.** Import REPLACES the record; it never merges two
-  records. (Merge would require identity and conflict resolution the product
-  does not have.)
-- **No new capture features.** No new target types, no address entry, no map,
-  no LLM narration. This EPIC reads and displays the guesses the existing loop
-  already produces; it does not change how a guess is made.
-- **No `/settings` screen.** The plan reserves `/settings` for units, home
-  management, and sensor status. Only export/import belongs to THIS EPIC, and it
-  lives on `/record`. Do not build the rest of `/settings`.
-- **No improvement promise.** The chart may show the user's own trajectory over
-  time (that is their data, plotted honestly), but no statement, caption, or
-  label may claim the user is improving or will improve.
+- **No tutorial essays.** No paragraphs of instruction anywhere in the first-run
+  surfaces. One short imperative sentence per guided step; one short intro line
+  on the sample.
+- **No multi-screen onboarding.** No onboarding route, no carousel, no modal
+  sequence, no "step 1 of 5" wizard. The sample is inline on the landing; the
+  guided path is the existing in-flow checklist.
+- **No tips that outlive the first success.** Nothing new that keeps showing
+  after the first completed real guess or to a returning user.
+- **No new guess capture.** The sample does not use location, the compass, or any
+  input. It does not persist. It does not touch the record or the
+  `ic_seen_walkthrough` flag.
+- **No changes to the live loop's phases, scoring, or record.** This EPIC reads
+  the existing engine and existing walk-through; it does not change how a real
+  guess is made, scored, or stored (beyond the single retire-timing fix above).
+- **No backend, no seed script, no server-side demo.** SEED_DEMO for this
+  static, account-less SPA is satisfied by the built-in sample (see Staging
+  reachability). Do not add a server.
 
 ---
 
@@ -76,477 +87,321 @@ the whole reason it compounds.
 
 ### Stack facts (already in place — do not change)
 - React 18 + TypeScript + Vite; routing via `react-router-dom`; tests via
-  Vitest + Testing Library in jsdom. `npm run build` runs `tsc --noEmit && vite
-  build`; `npm test` runs `vitest run`.
-- Design tokens in `src/styles/global.css`: `--bg`, `--surface`,
+  Vitest + Testing Library in jsdom. `npm run build` runs
+  `tsc --noEmit && vite build`; `npm test` runs `vitest run`.
+- Design tokens in `src/styles/global.css` (`--bg`, `--surface`,
   `--surface-raised`, `--border`, `--text`, `--text-muted`, `--accent`,
   `--accent-strong`, `--accent-contrast`, `--danger`, `--focus`, `--radius`,
-  `--content-max` (34rem), `--tap` (44px). Dark theme, `color-scheme: dark`,
-  global `:focus-visible` ring, `prefers-reduced-motion` reset. Use these; add
-  no new color system and no charting dependency.
+  `--content-max`, `--tap` = 44px). Use these; add no new color system.
 - `src/game/geoMath.ts` — `initialBearingDeg`, `haversineDistanceM`,
-  `bearingErrorDeg` (unsigned `[0,180]`), `distanceRatio`, `compassPoint8`.
-- `src/game/scoring.ts` — `describeBearing`, `describeDistance`, `isMeasurable`,
-  `formatDistance`, `MIN_MEASURABLE_M`. Reuse `formatDistance` and
-  `isMeasurable`; do not duplicate them.
-- `src/game/nudges.ts` — `NUDGES`, `nudgeAt`.
-- `src/screens/GuessFlow.tsx` — the whole loop on `/guess`. It already holds, at
-  reveal time, the anchor (`{ kind, lat, lng, accuracyM }`), the locked bearing
-  (or null in distance-only), the parsed `distanceM`, the `HeadingCapability`
-  (for the floor via `floorFor`), the `guessMode`, and the `nudgeIndex`. The
-  reveal fix is `{ ok:true, lat, lng, accuracyM, timestamp }`. This EPIC reads
-  those values to build a record row; it does not change the loop's phases.
-- `src/App.tsx` — routes `/` (Landing) and `/guess` (GuessFlow) inside `Shell`;
-  `/reveal` is reserved and unused. `*` redirects to `/`.
-- `src/shell/Shell.tsx` — header with a `brand` span, `<Outlet/>` in `main`.
+  `bearingErrorDeg`, `signedBearingErrorDeg`, `distanceRatio`, `compassPoint8`.
+  Reuse; do not duplicate.
+- `src/game/scoring.ts` — `bearingBucket`, `describeBearing`, `describeDistance`,
+  `isMeasurable`, `formatDistance`, `MIN_MEASURABLE_M`. Reuse; do not duplicate.
+- `src/screens/Landing.tsx` (+ `Landing.module.css`) — the first screen at `/`.
+  Currently: an `h1` `The Inner Compass`, a tagline, and one primary link
+  `Start a walk` to `/guess`. `Landing.module.css` already carries unused
+  `.status`, `.statusText`, `.resultCard`, `.mode` classes from a removed
+  compass check; the sample panel may reuse `.resultCard` rather than adding new
+  card styles.
+- `src/screens/GuessFlow.tsx` — the live loop. Already holds a `Walkthrough`
+  component (four steps, `Skip` button, `ic_seen_walkthrough` gate via
+  `hasSeenWalkthrough` / `markWalkthroughSeen`, `showWalkthrough` shown only in
+  `setup`/`guess` phases), a `Reveal` component whose measurement body this EPIC
+  extracts, and `runRevealFix` which currently marks the walk-through seen after
+  any successful fix. The measurable check `isMeasurable(trueDist, fix.accuracyM)`
+  already gates persistence in `persistReveal`.
 
 ### Data model / migrations
-There is no database and no server; no SQL migrations apply. The record is a
-localStorage time series. Its shape is forward-versioned so a future change can
-migrate rather than corrupt.
+None. There is no server and no database. The sample is stateless (nothing is
+read or written for it). The only first-run state is the existing
+`localStorage` key `ic_seen_walkthrough` (values `"1"` / absent), whose shape is
+unchanged. No migration applies.
 
-**localStorage key** `ic_guesses_v1` — a JSON array of `StoredGuess`. (Keep the
-existing `ic_seen_walkthrough` key untouched.)
+### New module: `src/game/sampleGuess.ts` (+ `sampleGuess.test.ts`)
+Pure, no I/O. Holds the built-in scenario and computes the measurement so the
+landing renders real numbers, and so the "non-zero, measurable, honest" guarantee
+is unit-testable away from the DOM.
 
 ```ts
-// src/record/store.ts
-export const SCHEMA_VERSION = 1;
+// A fixed, believable scenario: someone standing at `current` guessed the way
+// back to `start`. Coordinates chosen so the truth is clearly non-zero and
+// measurable, the bearing error is real but not humiliating, and the distance
+// guess is honestly off. These are demo constants, not user data.
+export const SAMPLE_GUESS = {
+  current: { lat: 40.0, lng: -74.0 },      // where the sample walker is now
+  start: { lat: 40.003, lng: -73.996 },    // the spot they are guessing back to
+  guessedBearingDeg: 20,                    // they guessed roughly north-northeast
+  guessedDistanceM: 650,                    // they guessed long
+  fixAccuracyM: 8,                          // a good fix, so the reveal is measurable
+  floorDeg: 10,                             // a decent compass margin
+} as const;
 
-export type StoredGuess = {
-  id: string;                       // stable unique id (see id generation)
-  timestamp: number;                // ms epoch at reveal (Date.now())
-  targetKind: "home" | "walk_start";
-  mode: "bearing" | "distance_only";
-  guessedBearingDeg: number | null; // null in distance_only
-  trueBearingDeg: number;           // [0,360)
-  bearingErrorDeg: number | null;   // unsigned [0,180], null in distance_only
-  signedBearingErrorDeg: number | null; // [-180,180], + = clockwise / right of true
+export type SampleReveal = {
+  directionWord: string;      // compassPoint8(trueBearing)
+  bearing: BearingResult;     // describeBearing(errorDeg, floorDeg)
   guessedDistanceM: number;
   trueDistanceM: number;
-  distanceRatio: number;            // guessedDistanceM / trueDistanceM
-  headingAccuracyDeg: number | null;// the shown floor at reveal, or null
-  nudgeIndex: number;
+  distance: DistanceResult;   // describeDistance(guessedDistanceM, trueDistanceM)
+  measurable: boolean;        // must be true for the built-in constants
 };
+
+export function computeSampleReveal(): SampleReveal;
 ```
 
-- **id generation**: `crypto.randomUUID()` when available, else a fallback
-  `` `g-${timestamp}-${counter}` `` with a module-scoped counter. The id must be
-  stable once written (it survives export/import verbatim).
-- **Storage cap (bounds the hot path).** A module constant
-  `MAX_STORED_GUESSES = 2000`. On append, if the array would exceed the cap,
-  keep the most recent `MAX_STORED_GUESSES` (drop oldest). This bounds parse
-  cost and storage size so the write path never grows without limit. The cap is
-  generous (years of daily walks); export is the archival path for a heavier
-  user. Do not silently cap the DISPLAY differently from the store: the list is
-  paginated (below), and pagination is the display bound.
+- `computeSampleReveal` derives `trueBearing = initialBearingDeg(current, start)`
+  and `trueDist = haversineDistanceM(current, start)`, then
+  `bearingErrorDeg(guessedBearingDeg, trueBearing)`,
+  `describeBearing(error, floorDeg)`, `compassPoint8(trueBearing)`, and
+  `describeDistance(guessedDistanceM, trueDist)`. It reuses the shared functions;
+  it must NOT reimplement any scoring or geometry.
+- With the constants above the outcome is, approximately: truth to the
+  **northeast**, bearing error about **26°** (bucket `Close`, comfortably above
+  the 10° floor so a concrete degrees-off number shows), true distance about
+  **477 m** against a **650 m** guess (ratio about 1.36, verdict `long`), and
+  `measurable === true`. The tests assert these as properties and with tolerance,
+  not to the last digit (the engine is the source of the exact values).
 
-### New module: `src/record/store.ts` (+ `store.test.ts`)
-Thin, synchronous, defensive localStorage access. All reads tolerate absent or
-corrupt storage by returning an empty record; a blocked or throwing storage
-never crashes the app (mirror the existing `hasSeenWalkthrough` try/catch
-pattern in `GuessFlow.tsx`).
+### New shared component: extract `RevealMeasurement`
+Extract the measurement body from `GuessFlow`'s `Reveal` into a small
+presentational component so the live reveal and the sample render identical
+words. Recommended location `src/screens/RevealMeasurement.tsx` (+ a module CSS,
+or reuse `GuessFlow.module.css` classes if kept in that folder). It renders the
+already-shipped markup with no behavior change:
 
-- `loadGuesses(): StoredGuess[]` — read + `JSON.parse`; on any error or
-  non-array, return `[]`. Optionally filter out rows failing a minimal shape
-  check so one bad row cannot poison the screen.
-- `appendGuess(g: StoredGuess): StoredGuess[]` — load, push, apply the cap,
-  write, return the new array. Never throws to the caller.
-- `replaceGuesses(gs: StoredGuess[]): StoredGuess[]` — write the given array
-  (used by import), applying the cap; return what was written.
-- `clearGuesses(): void` — remove the key (used only if you offer a clear
-  control; optional, see UI).
+- Props: `bearing: BearingResult | null`, `directionWord: string`,
+  `guessedDistanceM: number | null`, `trueDistanceM: number`, and
+  `showCompassCaption?: boolean` (default `true`).
+- Renders exactly what `Reveal` renders today for the measurable branch: the
+  bucket headline (when `bearing`), `It was to the {word}.`, the within-floor
+  detail OR `{n}° off.`, the compass caption `Your compass reads to about ±{n}°.`
+  (only when `showCompassCaption`), and the distance block
+  (`You guessed {guess}. It was {truth}.` plus the verdict line).
+- It renders ONLY the measurement. The nudge, `Guess again` / `New start`
+  actions, and the `See your record` link stay in `GuessFlow` and are NOT part of
+  this component.
+- `GuessFlow`'s `Reveal` now composes `RevealMeasurement` (with
+  `showCompassCaption` = true) plus its nudge/actions. The rendered DOM for the
+  live reveal is unchanged, so every existing `GuessFlow.test.tsx` assertion
+  (bucket text, direction text, `Your compass reads to about ±12°.`, distance
+  line) stays green. If any existing string moves, it must move verbatim.
 
-### New module: `src/record/signature.ts` (+ `signature.test.ts`)
-Pure. Turns the record into a small set of plain, honest sentences. No I/O.
+### Landing sample (`src/screens/Landing.tsx` + `Landing.module.css`)
+Add the sample below the existing primary action, visibly subordinate to it
+(QUALITY BAR §7: one obvious primary action; the sample is secondary).
 
-- `export const SIGNATURE_MIN_GUESSES = 5;` — the stated threshold. Below it,
-  `deriveSignature` returns `[]` and the screen shows the low-data state.
-- `deriveSignature(guesses: StoredGuess[]): string[]` — returns 0..3 statement
-  strings. Rules (all derived only from the user's own rows, never a promise):
-  - If `guesses.length < SIGNATURE_MIN_GUESSES` → return `[]`.
-  - **Distance calibration** (always, once past threshold; distance is the hero
-    metric so this statement comes first). Let `m = median(distanceRatio over
-    all guesses)`.
-    - `m > 1.25` → `Your distance guesses run long, about ${m.toFixed(1)}× the real distance.`
-    - `m < 0.8`  → `Your distance guesses run short, about ${m.toFixed(1)}× the real distance.`
-    - else       → `Your distance guesses land close to the real distance.`
-  - **Bearing typical error** (only if at least `SIGNATURE_MIN_GUESSES` guesses
-    are `mode === "bearing"` with a non-null `bearingErrorDeg`). Let
-    `e = median(bearingErrorDeg over those)`. Statement:
-    `Your bearings are usually about ${Math.round(e)}° off.`
-  - **Bearing lean** (only alongside the bearing statement above, and only when
-    the lean is real, not noise). Let `s = median(signedBearingErrorDeg)` over
-    the bearing guesses, and `agree` = the fraction whose sign matches `s`.
-    If `Math.abs(s) >= 15` AND `agree >= 0.6`:
-    `You lean ${s > 0 ? "right" : "left"} of true.`
-  - Order in the returned array: distance calibration, then bearing typical
-    error, then bearing lean.
-- A small internal `median(nums: number[]): number` helper (sorted middle, mean
-  of the two middles for even length). Keep it local to this module.
+- Keep the current `h1` `The Inner Compass`, the tagline, and the primary link
+  `Start a walk` to `/guess` exactly as they are (existing Landing tests must
+  stay green).
+- Add a subordinate `Try a sample guess` control. A `<button type="button">`
+  styled as a secondary/subtle action, not a second primary. It gives pressed
+  feedback within 100ms (CSS `:active`), and it is keyboard reachable with a
+  visible focus ring and a tap target ≥ 44px.
+- On click, set local state `showSample = true` and render the sample panel
+  inline below (a purely synchronous, client-side reveal). The panel:
+  - an `h2` `A sample guess`,
+  - one intro line `Here is a real guess scored against the truth.`,
+  - the `RevealMeasurement` for `computeSampleReveal()`, passed
+    `showCompassCaption={false}` (the landing has no device compass, so the
+    device-specific caption is omitted; the concrete `{n}° off.` line still
+    shows because the sample's error exceeds its floor),
+  - a subordinate closing line `Now measure your own.` that points the user back
+    up to the primary `Start a walk`. Do not add a second `Start a walk` control.
+- The panel reuses `.resultCard` (or an equivalent existing card token). Mobile
+  first: single column within `--content-max`, usable at 390px with no
+  horizontal scroll, labels ≥ 12px, sufficient contrast.
+- The sample never persists and never touches `ic_seen_walkthrough`. It is a
+  read-only render of built-in data.
 
-The signature never says "improving", "better", "worse than before", or
-compares recent to early guesses. Trajectory belongs to the chart, which plots
-the user's own points and lets them read the trend themselves.
+### Guided-path retire fix (`src/screens/GuessFlow.tsx`)
+Today `runRevealFix` calls `markWalkthroughSeen()` after any successful fix,
+including a barely-moved (non-measurable) reveal. Align the retire event with the
+"first completed real guess":
 
-### New module: `src/record/recordFile.ts` (+ `recordFile.test.ts`)
-Pure serialize / parse for export and import. The DOM download and file-read
-wiring stays in the component; this module holds the format and validation so it
-is unit-testable.
+- Compute measurability once for the reveal (the same
+  `isMeasurable(trueDist, fix.accuracyM)` the persistence path uses) and gate BOTH
+  the record append AND the walk-through retire on it. The cleanest shape: have
+  `persistReveal` (or a small helper) return whether the reveal was measurable,
+  and in `runRevealFix` mark the walk-through seen only when it was.
+- A measurable reveal: append the row (unchanged) AND, if unseen, mark seen and
+  set `seenWalkthrough`. A barely-moved reveal: append nothing (unchanged) AND
+  leave the walk-through available, so the next real attempt still guides the
+  user.
+- The explicit `Skip` path (`skipWalkthrough`) is unchanged: skipping retires the
+  walk-through immediately and permanently.
+- Do not add steps, do not change the four step sentences, and do not change the
+  `showWalkthrough` visibility rule. The path already satisfies "at most four
+  one-sentence steps, each pinned to a real control, skippable, shown only until
+  first success". This fix only corrects the retire timing.
 
-```ts
-export type RecordFile = {
-  schemaVersion: number;   // SCHEMA_VERSION
-  exportedAt: string;      // ISO 8601, set by the caller at export time
-  guesses: StoredGuess[];
-};
-```
+### Routing / nav
+No route changes. The sample is inline on `/`. Do not add a `/sample` route or
+any nav entry.
 
-- `serializeRecord(guesses: StoredGuess[], exportedAt: string): string` —
-  `JSON.stringify` of a `RecordFile` (pretty-printed with 2-space indent is
-  fine).
-- `parseRecord(text: string): { ok: true; guesses: StoredGuess[] } | { ok:
-  false; reason: "unreadable" | "wrong_format" }` — `JSON.parse` inside a
-  try/catch (`unreadable` on throw). Validate: object with
-  `schemaVersion === SCHEMA_VERSION` and `Array.isArray(guesses)`, and each row
-  passes a minimal shape check (required numeric/string fields present, correct
-  types). Fail with `wrong_format` otherwise. This is the input-validation
-  boundary for imported data.
-
-**Round-trip guarantee (AC):** for any `StoredGuess[]`, `parseRecord(
-serializeRecord(gs, iso)).guesses` deep-equals `gs`. JSON preserves the numeric
-and string fields verbatim, so equality holds. The test asserts this directly.
-
-### geoMath addition: `signedBearingErrorDeg`
-`src/game/geoMath.ts` gains one pure function (additive; the existing unsigned
-`bearingErrorDeg` still drives the reveal's display bucket).
-
-- `signedBearingErrorDeg(guessDeg, trueDeg): number` in `[-180, 180]`, positive
-  when the guess sits clockwise of true (to the right). Implementation:
-  `((guessDeg - trueDeg + 540) % 360) - 180`. Its magnitude equals
-  `bearingErrorDeg(guessDeg, trueDeg)`.
-
-### GuessFlow integration (`src/screens/GuessFlow.tsx`)
-Append exactly one record per measurable reveal, at the moment the reveal fix
-succeeds, so it happens once and never on re-render.
-
-- In `runRevealFix`, after a successful fix, compute the true values the reveal
-  needs (`initialBearingDeg`, `haversineDistanceM`) and `isMeasurable(trueDist,
-  fix.accuracyM)`. When measurable, assemble a `StoredGuess` and call
-  `appendGuess(g)` before (or as) you set the `reveal` phase. When not
-  measurable (barely moved), do NOT append. This keeps the write on the
-  single fix event, not in the render path.
-  - `guessedBearingDeg` / `bearingErrorDeg` / `signedBearingErrorDeg` are the
-    locked-bearing values in `bearing` mode, and `null` in `distance_only`.
-  - `headingAccuracyDeg` is the floor from the stored capability
-    (`floorFor(capability)`), or `null` when unknown.
-  - `timestamp` is `Date.now()`.
-- The `Reveal` component's display math is unchanged (it may keep recomputing
-  for display; that is cheap and memoized). Do NOT move display logic; only add
-  the persistence write in `runRevealFix`.
-- Add a subordinate **See your record** link (a `react-router` `Link` to
-  `/record`) in the reveal, visually below the `Guess again` / `New start`
-  actions, so a user who just guessed can reach the growing record. It is
-  subordinate to those actions (QUALITY BAR §7). It must render in both the
-  measurable and barely-moved reveal branches.
-
-### New screen: `src/screens/Record.tsx` (+ `Record.module.css`)
-Mounted at `/record`. Reads the record once on mount (`loadGuesses`) into state.
-Mobile-first, single column within `--content-max`, everything usable at 390px
-with no horizontal scroll and tap targets ≥ 44px.
-
-**Layout / states**
-
-- **Empty (zero guesses):** a designed surface, not a blank region. States what
-  the record is for and points to the first guess in positive phrasing, with a
-  primary action to start. (Copy inventory below.) No charts, no history, no
-  export section clutter (an import control may still show so a returning user
-  on a new device can restore a file; keep it subordinate).
-- **Low-data (1 to `SIGNATURE_MIN_GUESSES - 1` guesses):** render the charts
-  with the points that exist, render the history, and in place of the signature
-  block show one line that states the threshold in positive phrasing (it names
-  the number, e.g. how many more guesses until the signature appears). No
-  signature statements yet.
-- **Full (≥ threshold):** charts, signature statements, paginated history,
-  export/import.
-
-**Charts (inline SVG, no dependency).** Follow the `dataviz` skill's guidance
-for color, contrast, and labels; draw only from the existing CSS tokens (accent
-for the data, muted for axes/baseline, danger reserved for genuine error UI).
-Both charts are non-interactive `role="img"` figures with an `aria-label` that
-summarizes the data in words (so the chart is not information a sighted user
-alone can read).
-
-- **Distance-ratio calibration chart = HERO.** First in the DOM and visually
-  dominant (larger height, own heading). Mark it with a stable
-  `data-role="hero-chart"` for the ordering test. Plot each guess's
-  `distanceRatio` against its position in time, most-recent-`N` window
-  (`CHART_WINDOW = 100`), with a horizontal baseline at ratio `1` (labeled so
-  the user reads "1× is exact"). Points/line above the baseline are
-  overestimates, below are underestimates. Clamp the y-range sensibly so one
-  wild ratio does not flatten the rest (e.g. cap the drawn ratio at a max like
-  3× while keeping the real value in the aria summary). Readable at 390px:
-  labels ≥ 12px, sufficient contrast.
-- **Bearing-error chart = SECONDARY.** Below the hero, smaller. Plots
-  `bearingErrorDeg` (0–180, lower is better) for the `bearing`-mode guesses in
-  the window. If there are zero bearing-mode guesses, show a short positive note
-  in its place instead of an empty axis (copy below). Mark the section for the
-  ordering test (e.g. `data-role="bearing-chart"`).
-
-**Signature statements.** Render `deriveSignature(guesses)` as a short list, only
-when non-empty (past threshold). Each statement is one plain sentence. No
-statement claims improvement.
-
-**History list (paginated — bounds the hot path).** Newest first. Render one
-page at a time, `PAGE_SIZE = 10`. A **Show more** button appends the next page
-(client-side slice; never render the whole array at once). Each row is compact:
-the relative or absolute date, the target kind, the distance line
-(`formatDistance(guessedDistanceM)` vs `formatDistance(trueDistanceM)`), and, in
-bearing mode, the bucket or degrees off. Reuse `formatDistance`. Do not add a
-per-row map or expansion.
-
-**Export / import (subordinate section).**
-- **Export**: a button that builds `serializeRecord(guesses, new
-  Date().toISOString())`, wraps it in a `Blob(["…"], { type: "application/json"
-  })`, and triggers a download via a created object URL on a transient `<a
-  download="inner-compass-record.json">` (revoke the URL after). Disabled when
-  the record is empty. Gives pressed feedback < 100ms.
-- **Import**: a labeled `<input type="file" accept="application/json,.json">`.
-  On change, read the file text (`file.text()`), call `parseRecord`. On `ok`,
-  if the current record is non-empty, show an inline confirm ("Importing
-  replaces your record. Continue?" with a confirm and a cancel) before calling
-  `replaceGuesses` and refreshing state; if the record is empty, replace
-  directly. On failure, show a designed inline error in the product's voice
-  (copy below), never a raw parse error or a crash. Do NOT use `window.confirm`
-  or `alert` (untestable, off-brand); use inline designed controls.
-  - Import REPLACES; it never merges (cross-device merge is a non-goal).
-
-**Not a dead end.** The record screen offers a clear way back to a guess: a
-subordinate **Start a walk** link to `/guess` (and the header nav below always
-reaches `/`). The empty state's primary action is that link.
-
-### Routing + nav
-- `src/App.tsx`: add `<Route path="/record" element={<Record />} />` inside the
-  `Shell` route, before the `*` redirect.
-- `src/shell/Shell.tsx` (+ `Shell.module.css`): make the brand a `Link` to `/`
-  and add a subordinate **Record** `Link` to `/record` in the header. The
-  Record link is visually subordinate to the brand (small, muted), reachable by
-  keyboard, tap target ≥ 44px. This is the always-available path to the record.
-  Do not add any other nav.
+### Staging reachability (SEED_DEMO)
+No STAGING DEPLOY CONTRACT block was supplied to this spec. For this static,
+account-less SPA there is no server-side data to seed, so the SEED_DEMO intent
+("the deployed app shows its differentiator within a minute without hand-crafted
+input") is met entirely by the built-in sample: the landing at `/` is the first
+route, renders instantly as static content, and the sample is one tap away with a
+synchronous compute. If a STAGING DEPLOY CONTRACT with a `SEED_DEMO` variable is
+present at deploy time, the built-in sample already satisfies it. Do not add a
+backend to honor it.
 
 ### Security / privacy (client-only app)
-- No server routes, no auth surface, no accounts: the relevant hygiene is
-  **input validation at the import boundary** (`parseRecord` above) and **no PII
-  in logs**. Never log coordinates, bearings, or the imported file contents. Do
-  not add Sentry breadcrumbs carrying location or record data.
-- The exported file contains the user's own coordinates (home/walk-start and
-  reveal positions). That is inherent to a portable record and stays entirely
-  local: it is written only to a file the user explicitly downloads, never
-  transmitted. Do not add any network call to export or import.
+No server routes, no auth surface, no accounts, no new input boundary (the sample
+takes no user input). The sample uses built-in demo constants, not the user's
+location, so no coordinates of the user are involved. Do not log the sample or
+the walk-through state. No PII in logs. No network call is added.
 
 ---
 
 ## Ordered task list
 
-**T1 — `signedBearingErrorDeg` in `src/game/geoMath.ts` + tests.**
+**T1 — Extract `RevealMeasurement` from `GuessFlow`'s `Reveal`.**
 AC:
-- `signedBearingErrorDeg(guessDeg, trueDeg)` returns a value in `[-180,180]`,
-  positive clockwise of true; its magnitude equals `bearingErrorDeg`.
-- Wraparound cases pass (see Test plan).
+- A presentational component renders the live reveal's measurement body (bucket
+  headline, `It was to the {word}.`, within-floor detail or `{n}° off.`, the
+  compass caption behind `showCompassCaption`, and the distance block with
+  verdict), and `GuessFlow`'s `Reveal` composes it.
+- The live reveal's rendered DOM and text are unchanged: every existing
+  `GuessFlow.test.tsx` assertion still passes.
 
-**T2 — Persistence store `src/record/store.ts` + tests.**
+**T2 — Built-in sample module `src/game/sampleGuess.ts` (+ tests).**
 AC:
-- `StoredGuess`, `SCHEMA_VERSION`, `MAX_STORED_GUESSES` exported.
-- `appendGuess` persists a row that `loadGuesses` returns on a fresh read
-  (persists across a simulated reload).
-- The cap holds: appending past `MAX_STORED_GUESSES` keeps the most recent
-  `MAX_STORED_GUESSES` and drops the oldest.
-- `loadGuesses` returns `[]` on absent or corrupt storage without throwing;
-  `replaceGuesses` writes and returns the (capped) array.
+- `SAMPLE_GUESS` constants and `computeSampleReveal()` exported.
+- `computeSampleReveal()` returns `measurable === true`, a bearing error strictly
+  greater than 0 and greater than `SAMPLE_GUESS.floorDeg` (so a concrete
+  degrees-off number shows), a true distance strictly greater than 0, and a
+  distance verdict that is not `spot_on` (a real over- or under-estimate).
+- It reuses `geoMath` / `scoring`; it contains no reimplemented geometry or
+  scoring.
 
-**T3 — Signature engine `src/record/signature.ts` + tests.**
+**T3 — Landing sample (`src/screens/Landing.tsx` + `Landing.module.css`).**
 AC:
-- `SIGNATURE_MIN_GUESSES` exported; `deriveSignature` returns `[]` below it.
-- Distance calibration statement matches the seeded median (long / short /
-  close) at the 1.25 and 0.8 edges.
-- Bearing typical-error and lean statements appear only with enough bearing-mode
-  guesses and only when the lean clears the magnitude/agreement gate.
-- No returned statement contains an improvement claim.
+- The landing keeps its `h1`, tagline, and single primary `Start a walk` link.
+- A subordinate `Try a sample guess` button is present, keyboard reachable, tap
+  target ≥ 44px, with pressed feedback.
+- Clicking it reveals the sample panel: heading `A sample guess`, intro line, the
+  `RevealMeasurement` for the built-in sample (compass caption hidden), and the
+  closing line. The panel shows a non-zero degrees-off number and a real distance
+  line with a verdict.
+- The sample renders synchronously (no async, no location, no sensor) and writes
+  nothing to storage.
 
-**T4 — Record file `src/record/recordFile.ts` + tests.**
+**T4 — Guided-path retire fix (`src/screens/GuessFlow.tsx`).**
 AC:
-- `serializeRecord` / `parseRecord` round-trip is deep-equal for a seeded
-  record.
-- `parseRecord` returns `wrong_format` for a valid-JSON object with a bad shape
-  and `unreadable` for non-JSON text; it never throws.
+- A measurable reveal retires the walk-through (sets `ic_seen_walkthrough`); a
+  barely-moved reveal does not.
+- `Skip` still retires it immediately.
+- The four step sentences, the step count, and the `showWalkthrough` visibility
+  rule are unchanged.
 
-**T5 — GuessFlow persistence hook-in (`src/screens/GuessFlow.tsx`).**
+**T5 — Tests, copy sweep, README, full build.**
 AC:
-- A measurable reveal appends exactly one `StoredGuess` with correct fields for
-  both `bearing` and `distance_only` modes; a barely-moved reveal appends
-  nothing.
-- The write happens on the fix event, not on re-render (no duplicate rows across
-  re-renders of a single reveal).
-- The **See your record** link renders on the reveal (both branches) and routes
-  to `/record`.
-- The existing GuessFlow tests still pass; the reveal is not delayed by the
-  write.
-
-**T6 — Record screen + charts + routing + shell nav.**
-AC:
-- `/record` renders empty, low-data, and full states per the design.
-- Distance-ratio chart is first in the DOM and marked hero; bearing-error chart
-  is second; both have descriptive `aria-label`s and are readable at 390px.
-- History is paginated at `PAGE_SIZE`; **Show more** reveals the next page; the
-  whole array is never rendered at once.
-- Export downloads a JSON file; import validates, replaces on success (with an
-  inline confirm when replacing a non-empty record), and shows a designed error
-  on a bad file.
-- Shell header links to `/` and `/record`; keyboard reachable, ≥ 44px targets.
-
-**T7 — Component tests, copy sweep, README, full build.**
-AC:
-- The component and unit tests below pass.
+- The unit and component tests in the Test plan pass.
 - Copy sweep passes on every string this EPIC adds or edits.
-- `README.md` gains a short, plain description of the record, the trend view,
-  and export/import (for strangers, no pipeline jargon).
+- `README.md` gains a short, plain mention of the sample guess and the guided
+  first run (for strangers, no pipeline jargon).
 - `npm run build` and `npm test` both pass.
 
 ---
 
 ## Test plan (each acceptance criterion → the test that proves it)
 
-Run the whole suite with `npm test` (Vitest, jsdom). For store/record tests,
-clear `localStorage` in `afterEach`. For the Record screen, seed via the store
-(or mock `loadGuesses`) and render inside `MemoryRouter`, following the existing
-`GuessFlow.test.tsx` / `Landing.test.tsx` patterns.
+Run the whole suite with `npm test` (Vitest, jsdom). Render Landing and GuessFlow
+inside `MemoryRouter`, following the existing `Landing.test.tsx` /
+`GuessFlow.test.tsx` patterns. Clear `localStorage` around GuessFlow tests
+(existing `beforeEach`/`afterEach` already do).
 
-**AC: guesses persist across reloads; history bounded.**
-`store.test.ts` — `appendGuess(row)` then a fresh `loadGuesses()` (reading the
-same localStorage) returns the row: this is the reload proof. Append
-`MAX_STORED_GUESSES + 5` rows and assert length equals the cap and the newest
-rows are kept, the oldest dropped. `loadGuesses()` returns `[]` when the key is
-absent and when it holds non-JSON or a non-array (no throw).
-`Record.test.tsx` — seed 25 guesses; assert only `PAGE_SIZE` history rows render
-initially, and **Show more** grows the list by a page without rendering all 25
-at once.
+**AC: the landing states what the app does and offers one obvious primary action;
+the sample yields a real reveal with non-zero bearing and distance.**
+`sampleGuess.test.ts` — `computeSampleReveal()` returns `measurable === true`,
+`bearing.errorDeg > SAMPLE_GUESS.floorDeg` (and `> 0`), `trueDistanceM > 0`, and
+`distance.verdict !== "spot_on"`. Assert the approximate expected values with
+tolerance (direction `northeast`; error near 26°; true distance near 477 m;
+verdict `long`) so a regression in the constants is caught without pinning exact
+digits.
+`Landing.test.tsx` — the existing assertions (the `h1`, the tagline, the single
+`Start a walk` primary link to `/guess`) still pass. New: clicking
+`Try a sample guess` renders the sample panel; assert a concrete degrees-off
+string (`/\d+° off\./`) and a distance line (`/You guessed .* It was .*/`) are in
+the panel, and that the panel is absent before the click. Assert no coordinates,
+sensor, or storage were touched (the record store stays empty:
+`loadGuesses()` is `[]`).
 
-**AC: trend view — distance ratio hero, bearing second, readable at 390px.**
-`Record.test.tsx` — seed a full record; assert the element with
-`data-role="hero-chart"` (distance ratio) precedes `data-role="bearing-chart"`
-in DOM order, both are present, and each carries a non-empty `aria-label`
-summarizing its data. Assert the hero chart's heading/label references distance
-calibration and the secondary references bearing. (390px pixel readability is a
-manual/CSS check; note it in the run summary. The DOM-order and labeling assert
-the hero/secondary relationship.)
+**AC: the guided path is at most four one-sentence steps pinned to real controls,
+skippable, and disappears permanently after the first completed real guess and
+for returning users.**
+`GuessFlow.test.tsx` (extend the existing `guided first run` block) —
+- Step count and shape: the walk-through renders at most four steps, each a
+  single short imperative sentence (assert the four known step texts render and
+  no fifth list item exists). The controls they name are present in the flow
+  (`Mark this spot` / distance input / `Lock direction` / `Reveal`, matching the
+  `data-step` attributes).
+- Skippable: clicking `Skip` hides the walk-through and sets
+  `ic_seen_walkthrough` to `"1"` (existing test).
+- Returning user: with `ic_seen_walkthrough` preset, the walk-through never
+  renders (existing test).
+- Retires on the first completed real guess: after a *measurable* reveal the flag
+  is set and the walk-through does not return on remount (existing test, still
+  valid).
+- New — does NOT retire on a barely-moved reveal: drive a barely-moved reveal
+  (reveal fix at the anchor, as in the barely-moved-guard test) with the
+  walk-through unseen; assert `ic_seen_walkthrough` is still absent afterward and
+  the walk-through is still available (e.g. remount in `setup`/`guess` shows the
+  first step). This proves the retire event is the real guess, not any reveal.
 
-**AC: empty and low-data states.**
-`Record.test.tsx` — zero guesses: assert the empty copy renders (what the record
-is for) and a link/primary to `/guess`; assert no signature statement and no
-history rows. Below threshold (e.g. 3 guesses): assert the low-data line states
-the threshold number and that no signature statement renders, while the charts
-and history still render the existing points.
+**AC: the live reveal is unchanged by the extraction.**
+`GuessFlow.test.tsx` — the full existing suite (commit gate, bearing path,
+distance-only path, fixing/error states, barely-moved guard, nudges, persistence,
+`See your record` link, commit validation) passes without edits to its
+assertions.
 
-**AC: error-signature past threshold, from user data, no improvement claim.**
-`signature.test.ts` —
-- Fewer than `SIGNATURE_MIN_GUESSES` → `[]`.
-- All ratios ≈ 1.5 across ≥ threshold guesses → a "run long, about 1.5×"
-  statement; all ratios ≈ 0.6 → "run short, about 0.6×"; ratios within
-  `[0.8,1.25]` → the "land close" statement. Boundary rows at exactly 1.25 and
-  0.8.
-- Bearing statements: appear only with ≥ threshold bearing-mode guesses; a
-  consistent right lean (signed errors mostly positive, median ≥ 15°) yields the
-  "lean right" statement; mixed-sign noise yields no lean statement.
-- Assert no statement string matches improvement phrasing (a test that scans the
-  output for banned words like "improv", "better", "worse", "progress").
-`Record.test.tsx` — a seeded ≥-threshold record shows the statements; a
-below-threshold record does not.
-
-**AC: export round-trip; import validates and replaces.**
-`recordFile.test.ts` — `parseRecord(serializeRecord(gs, iso)).guesses` deep-
-equals `gs` for a seeded multi-row record (bearing and distance-only rows).
-`parseRecord` returns `wrong_format` for `{schemaVersion:1}` with no guesses and
-for a row missing required fields; returns `unreadable` for `"not json{"`.
-`Record.test.tsx` — importing a valid file (dispatch a `change` on the file
-input with a stub `File`, or mock the read path) replaces the record and the new
-rows render; importing a bad file shows the designed error and leaves the
-existing record intact; export triggers a download (mock
-`URL.createObjectURL`/`revokeObjectURL` and assert an anchor with the download
-attribute / a blob URL is created).
-
-**AC: `signedBearingErrorDeg` correct.**
-`geoMath.test.ts` — `signedBearingErrorDeg(10,350) === 20` (right),
-`(350,10) === -20` (left), `(90,270) === 180` or `-180` (assert
-`Math.abs === 180`), `(0,0) === 0`; magnitude equals `bearingErrorDeg` for
-several pairs.
-
-**AC: persistence hook-in and no reveal delay.**
-`GuessFlow.test.tsx` (extend existing) — after a measurable bearing reveal,
-`loadGuesses()` returns one row with the expected mode/fields; after a
-distance-only reveal, one row with `guessedBearingDeg`/`bearingErrorDeg` null;
-after a barely-moved reveal, zero rows. Assert the reveal content renders as
-before (the write does not gate the reveal). Assert the **See your record** link
-is present and points to `/record`.
+**AC: on a fresh staging deploy with no input, the sample is reachable within a
+minute.**
+Proven structurally rather than by a timer: the sample is on `/` (the first
+route), renders from built-in constants with no async, location, sensor, or
+network, and `Landing.test.tsx` reaches the scored measurement with a single
+click and no mocks of geolocation or headings. Note the manual staging check (open
+the deployed URL, tap `Try a sample guess`, see a scored measurement) in the run
+summary; the DOM test is the automated proxy.
 
 **AC: copy sweep passes.**
-Mechanical + manual sweep of every string this EPIC adds or edits (Record
-screen, charts labels/aria, signature statements, store/record error copy,
-GuessFlow's new link, Shell nav, README): no `—` or `–`; none of the banned LLM
-vocabulary; no negative empty-state phrasing (`"You don't have"`, `"No … yet"`,
-`"Nothing … here"`, `"Unable to"`, `"Something went wrong"`); no improvement
-promise anywhere in the record surfaces. Record the sweep result in the run
-summary.
+Mechanical + read-aloud sweep of every string this EPIC adds or edits (the
+`Try a sample guess` button, the `A sample guess` heading, the sample intro and
+closing lines, any moved reveal strings, the README additions): no `—` or `–`;
+none of the banned LLM vocabulary; no negative empty-state phrasing (`You don't
+have`, `No … yet`, `Nothing … here`, `Unable to`, `Something went wrong`); no
+tutorial-essay padding. Record the sweep result in the run summary.
 
 ---
 
 ## Copy inventory (ship verbatim — already swept)
 
-Shell nav: brand link `The Inner Compass`; secondary link `Record`.
+Landing sample:
+- sample toggle button `Try a sample guess`
+- sample panel heading `A sample guess`
+- sample intro line `Here is a real guess scored against the truth.`
+- sample closing line `Now measure your own.`
 
-Reveal (added to `GuessFlow`): subordinate link `See your record`.
+Reused verbatim from the live reveal (via `RevealMeasurement`, already swept):
+- direction line `It was to the {word}.`
+- degrees-off line `{n}° off.`
+- distance line `You guessed {guess}. It was {truth}.`
+- verdict lines `Spot on.` / `You guessed short.` / `You guessed long.`
+- bucket headlines `Dead on` / `Close` / `Off by a bit` / `Well off` /
+  `Turned around`
 
-Record — empty state:
-- heading `Your record starts with one walk.`
-- body `Every guess you commit lands here, scored against the truth.`
-- primary link `Start a walk` (to `/guess`).
+Guided path (already shipped, unchanged, listed for the sweep record):
+- steps `Mark where you are standing now.`,
+  `Walk somewhere, then open this again.`,
+  `Point your phone back at your start and lock it.` /
+  `Guess how far you walked.` (distance-only),
+  `Type the distance, then tap Reveal.`
+- skip button `Skip`
 
-Record — low-data line (past zero, below threshold; `{n}` = guesses remaining to
-reach `SIGNATURE_MIN_GUESSES`):
-`Your error signature appears after {n} more guesses.`
-(When exactly one remains, the implementer may render `1 more guess`; keep it
-singular-correct. Copy stays positive.)
-
-Record — section headings:
-- hero chart heading `Distance calibration`
-- hero baseline label `1× is exact`
-- bearing chart heading `Bearing error`
-- bearing chart empty note (no bearing-mode guesses yet) `Lock a bearing on your
-  next walk to chart it here.`
-- signature heading `Your error signature`
-- history heading `Your guesses`
-- history pagination button `Show more`
-- export/import heading `Your record, on your device`
-
-Record — history row parts:
-- distance line `You guessed {guess}. It was {truth}.` (reusing `formatDistance`)
-- bearing detail (bearing rows) `{n}° off.` (use the same phrasing as the reveal)
-
-Record — export / import:
-- export button `Export`
-- import label `Import a record file`
-- import replace confirm body `Importing replaces your record. Continue?`
-- confirm button `Replace`
-- cancel button `Cancel`
-- import error `That file is not a record this app can read. Pick a file you
-  exported here.`
-
-Signature statements (generated from the user's own data):
-- distance long `Your distance guesses run long, about {m}× the real distance.`
-- distance short `Your distance guesses run short, about {m}× the real distance.`
-- distance close `Your distance guesses land close to the real distance.`
-- bearing typical `Your bearings are usually about {n}° off.`
-- bearing lean `You lean {right|left} of true.`
-
-All strings above contain no em-dashes or en-dashes, no banned LLM vocabulary,
-no negative empty-state phrasing, and no improvement promise. The signature
-sentences describe stable patterns in the user's own data; they never claim the
-user is improving. Sweep every string again if you edit any of them.
+All strings above contain no em-dashes or en-dashes, no banned LLM vocabulary, no
+negative empty-state phrasing, and no improvement promise. The sample describes a
+fixed scenario scored by the real engine; it never flatters and never claims the
+viewer is improving. Sweep every string again if you edit any of them.
