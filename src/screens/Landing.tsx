@@ -48,6 +48,7 @@ function SamplePanel() {
         guessedDistanceM={sample.guessedDistanceM}
         trueDistanceM={sample.trueDistanceM}
         showCompassCaption={false}
+        headingLevel="h3"
       />
       <p className={styles.sampleClose}>Now measure your own.</p>
     </div>

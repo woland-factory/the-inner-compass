@@ -1,407 +1,439 @@
-# EPIC SPEC — First run: guided walk-through and sample reveal
+# EPIC SPEC: Polish pass (quality bar and immediacy audit)
 
-A brand-new visitor must see this product's one true trick within a minute, on
-the phone already in their pocket, with no account and no walk required. This
-EPIC delivers that in two parts. First, a **sample guess** on the landing screen:
-one tap runs the real scoring engine on built-in coordinates and shows a real,
-non-zero measurement (how far off a direction was, which way the start really
-was, how the distance guess compared). Second, the **guided path** that already
-walks a first-time user through their own first real guess is tightened so it
-disappears at exactly the right moment and is proven by test.
+This EPIC is a UX, performance, accessibility, and copy pass over the whole
+delivered product against the QUALITY BAR and the immediacy differentiator.
+It tightens what exists and adds nothing. No new features, no visual
+gold-plating beyond the bar.
 
-The guided walk-through already ships in `GuessFlow.tsx` (a four-step checklist
-that ticks itself off, skippable, gated on `ic_seen_walkthrough`). This EPIC does
-NOT rebuild it. It makes one correctness fix to when it retires, and it adds the
-tests that prove every clause of the acceptance criteria. The sample reveal is
-the net-new build.
+The product this pass covers is a static React SPA with three routes:
+
+- `/` (`src/screens/Landing.tsx`): title, tagline, `Start a walk`, and the
+  one-tap sample reveal.
+- `/guess` (`src/screens/GuessFlow.tsx`): the whole loop as a phase machine
+  (setup, guess, fixing, reveal, error) plus the first-run walkthrough.
+- `/record` (`src/screens/Record.tsx`): two SVG charts, the error signature,
+  paginated history, export and import.
+
+Plus the shared shell (`src/shell/Shell.tsx`), the crash fallback
+(`src/observability/ErrorFallback.tsx`), the static boot paint in
+`index.html`, and the nginx production config.
 
 ---
 
 ## Quality differentiator (this EPIC lives or dies here)
 
-**Immediacy: from opening the page to a true, surprising measurement of your own
-sense of direction in under a minute, no install, no account, on the phone
-already in your pocket.**
+**Immediacy: from opening the page to a true, surprising measurement of your
+own sense of direction in under a minute, with no install and no account, on
+the phone already in your pocket.**
 
-What that demands of THIS EPIC: the sample reveal IS the immediacy promise made
-literal. The landing's first meaningful render is instant static content, and the
-sample is one tap away with a client-side, synchronous compute that shows a real
-scored measurement in well under a second. No location permission, no sensor, no
-network, no typing. The measurement it shows must be the REAL reveal (the same
-scoring engine and the same words the live loop uses) run on built-in
-coordinates, never hardcoded result text and never a zeroed or trivial outcome. A
-sample that reveals "0° off" or "spot on" teaches nothing and fails the bar. And
-the honesty that the rest of the app is built on carries over: the sample counts
-for nothing (it is never stored in the user's record and never marks the
-walk-through as seen), so the record the differentiator compounds into stays
-truthful.
+What that demands of THIS EPIC: the pass must PROVE the immediacy claim with
+numbers, not vibes. Cold load to first meaningful render, cold load to a
+scored sample measurement, and the tap count plus app-side time of the real
+loop all get measured on the production build and written down. Any fix that
+slows a hot path, adds bytes to the critical bundle, or puts a screen between
+the visitor and the first measurement is a regression against the
+differentiator, even if it improves some other dimension. Polish here means
+faster and clearer, never heavier.
 
 ---
 
 ## Scope
 
 ### In scope
-- **A sample guess on the landing screen.** A subordinate `Try a sample guess`
-  control that, on tap, reveals inline a real scored measurement computed by the
-  existing engine (`initialBearingDeg`, `haversineDistanceM`, `bearingErrorDeg`,
-  `describeBearing`, `describeDistance`, `compassPoint8`, `formatDistance`) from
-  a set of built-in constants. It shows a non-zero bearing error and a non-zero,
-  measurable distance result, using the same phrasing the live reveal uses.
-- **A shared reveal-measurement view.** Extract the presentational measurement
-  body of the live reveal (bucket headline, direction word, degrees-off line,
-  distance line, verdict) into one component used by BOTH the live loop and the
-  sample, so the sample is the real reveal and the copy has a single source.
-- **Built-in sample data module** (`src/game/sampleGuess.ts`): the fixed
-  coordinates and guess, plus a pure function that computes the measurement. Unit
-  tested for non-zero, measurable, honest output.
-- **Guided-path retire fix.** The walk-through is marked seen (retired forever)
-  on the first *measurable* reveal, the same event that records a real guess. A
-  barely-moved reveal (fails `isMeasurable`) no longer retires it, because the
-  user has not completed a real guess yet.
-- **Tests that prove every acceptance criterion** for the guided path and the
-  sample.
-- **A short, plain README line** naming the sample and the guided first run.
 
-### Out of scope (binding non-goals — do NOT build)
-- **No tutorial essays.** No paragraphs of instruction anywhere in the first-run
-  surfaces. One short imperative sentence per guided step; one short intro line
-  on the sample.
-- **No multi-screen onboarding.** No onboarding route, no carousel, no modal
-  sequence, no "step 1 of 5" wizard. The sample is inline on the landing; the
-  guided path is the existing in-flow checklist.
-- **No tips that outlive the first success.** Nothing new that keeps showing
-  after the first completed real guess or to a returning user.
-- **No new guess capture.** The sample does not use location, the compass, or any
-  input. It does not persist. It does not touch the record or the
-  `ic_seen_walkthrough` flag.
-- **No changes to the live loop's phases, scoring, or record.** This EPIC reads
-  the existing engine and existing walk-through; it does not change how a real
-  guess is made, scored, or stored (beyond the single retire-timing fix above).
-- **No backend, no seed script, no server-side demo.** SEED_DEMO for this
-  static, account-less SPA is satisfied by the built-in sample (see Staging
-  reachability). Do not add a server.
+1. Verifying and, where needed, fixing perceived speed on the production
+   build: first meaningful render, interaction feedback, bounded work on
+   every hot path.
+2. Verifying every screen and every state at a 390px viewport and fixing any
+   overflow, cramped touch target, or unreadable text.
+3. An inventory of every empty, loading, and error state, verifying each is a
+   designed surface in the product's voice, and fixing any gap.
+4. Accessibility fixes: heading structure, live-region behavior, focus
+   handling across phase changes, contrast verification, labels, landmarks,
+   keyboard reach.
+5. A mechanical copy sweep over every user-visible string in the repo, with
+   fixes for any hit.
+6. Measuring and reporting time-to-first-reveal from a cold load against the
+   under-a-minute target.
+7. Removing dead styles left behind by earlier EPICs (small, named below).
+8. A written report artifact, `docs/quality-pass.md`, recording every
+   measurement and check this spec requires. The planner's criteria say
+   "verified" and "measured and reported"; the report is where that lands.
+
+### Out of scope (binding non-goals)
+
+- No new features. No new screens, routes, settings, stored fields, or
+  mechanics. The sample reveal, walkthrough, charts, and export exist; this
+  pass tunes them and adds nothing beside them.
+- No visual gold-plating beyond the quality bar: no animations beyond the
+  existing spinner and pressed states, no redesign of the palette or layout
+  system, no design tokens beyond what `src/styles/global.css` already has.
+- No dependency additions except dev-only tooling if genuinely needed for a
+  measurement, and none is expected: every measurement below is doable with
+  the existing toolchain (`npm run build`, `vite preview` or the Docker
+  image, browser devtools, and Vitest).
+- No refactors of the game, record, or sensor logic. Pure modules under
+  `src/game/`, `src/record/`, `src/sensors/` are touched only if a criterion
+  below names them, and none does.
+
+---
+
+## Current-state audit (findings the tasks below fix)
+
+These were found by reading the delivered code. The implementer starts from
+this list rather than re-auditing blind, and extends it if the checks in the
+tasks surface more.
+
+**A. Heading structure breaks on the landing sample.**
+`RevealMeasurement` (`src/screens/RevealMeasurement.tsx`) renders the bucket
+headline as `<h1>`. On `/guess` that is correct: the bucket is the screen's
+headline. But `Landing.tsx` renders it inside `SamplePanel` under an `<h2>`
+("A sample guess"), so the landing page gets a second `<h1>` nested below an
+`<h2>`. Screen-reader document outlines are wrong on the app's front door.
+
+**B. The reveal has no heading in distance-only mode.**
+`RevealMeasurement` renders the `<h1>` only when `bearing` is non-null. A
+desktop or no-compass user who completes the loop lands on a reveal screen
+with no heading at all: the page's semantic structure disappears exactly on
+the payoff screen.
+
+**C. The live compass readout is a firehose live region.**
+`GuessFlow.tsx` marks the streaming degree readout `aria-live="polite"`
+(the `styles.readout` paragraph in `GuessPhase`). It updates continuously
+with the magnetometer, so a screen reader announces an unending stream of
+numbers while the user aims. Live regions are for discrete announcements,
+not sensor streams.
+
+**D. Phase changes drop keyboard and screen-reader context.**
+The phase machine unmounts the element that had focus (for example `Reveal`
+replaces the whole subtree after `fixing`). Focus falls to `<body>`, nothing
+announces that the reveal arrived, and a keyboard or screen-reader user is
+stranded mid-loop. The `fixing` card has `aria-live="polite"`, but the reveal
+content that replaces it is not announced.
+
+**E. Chart dots distort off the reference width.**
+Both SVG charts in `Record.tsx` use `preserveAspectRatio="none"` with a
+320-wide viewBox and a fixed CSS height. Lines survive via
+`vector-effect: non-scaling-stroke`, but the `<circle>` data points stretch
+into ellipses at any real width (about 1.4x wider at the desktop content
+column). The record is the trust surface; its marks should be clean.
+
+**F. `100vh` on mobile Safari.**
+`Shell.module.css` and `global.css` use `min-height: 100vh`. On iOS Safari
+the dynamic toolbar makes `100vh` taller than the visible viewport. The app
+is the phone-first product; it should prefer `100dvh` where supported.
+
+**G. Dead styles from an earlier landing design.**
+`Landing.module.css` still carries `.status`, `.statusText`, and `.mode`,
+which nothing in `Landing.tsx` references. Dead weight in a file this pass
+audits anyway.
+
+**H. Copy is already clean, but unproven.**
+A search over `src/` found no em-dashes, banned vocabulary, or negative
+empty-state phrasing in user-visible strings (matches were all code and
+tests). The sweep has never been run mechanically over the WHOLE repo
+surface (README, `index.html` meta description, `docs/`), and nothing
+records that it happened. The sweep below makes it a checked, reported fact.
+
+**I. Speed posture looks right, but is unmeasured.**
+The boot paint in `index.html` shows real content before the bundle;
+`nginx.conf` gzips and caches hashed assets; the record store caps rows
+(`MAX_STORED_GUESSES`), history paginates at 10, charts window at 100. What
+is missing is the measurement: nobody has recorded the built bundle size,
+confirmed the boot paint on the production image, or timed the first
+meaningful render and the sample reveal. The differentiator claim is
+currently unverified.
 
 ---
 
 ## Technical design
 
-### Stack facts (already in place — do not change)
-- React 18 + TypeScript + Vite; routing via `react-router-dom`; tests via
-  Vitest + Testing Library in jsdom. `npm run build` runs
-  `tsc --noEmit && vite build`; `npm test` runs `vitest run`.
-- Design tokens in `src/styles/global.css` (`--bg`, `--surface`,
-  `--surface-raised`, `--border`, `--text`, `--text-muted`, `--accent`,
-  `--accent-strong`, `--accent-contrast`, `--danger`, `--focus`, `--radius`,
-  `--content-max`, `--tap` = 44px). Use these; add no new color system.
-- `src/game/geoMath.ts` — `initialBearingDeg`, `haversineDistanceM`,
-  `bearingErrorDeg`, `signedBearingErrorDeg`, `distanceRatio`, `compassPoint8`.
-  Reuse; do not duplicate.
-- `src/game/scoring.ts` — `bearingBucket`, `describeBearing`, `describeDistance`,
-  `isMeasurable`, `formatDistance`, `MIN_MEASURABLE_M`. Reuse; do not duplicate.
-- `src/screens/Landing.tsx` (+ `Landing.module.css`) — the first screen at `/`.
-  Currently: an `h1` `The Inner Compass`, a tagline, and one primary link
-  `Start a walk` to `/guess`. `Landing.module.css` already carries unused
-  `.status`, `.statusText`, `.resultCard`, `.mode` classes from a removed
-  compass check; the sample panel may reuse `.resultCard` rather than adding new
-  card styles.
-- `src/screens/GuessFlow.tsx` — the live loop. Already holds a `Walkthrough`
-  component (four steps, `Skip` button, `ic_seen_walkthrough` gate via
-  `hasSeenWalkthrough` / `markWalkthroughSeen`, `showWalkthrough` shown only in
-  `setup`/`guess` phases), a `Reveal` component whose measurement body this EPIC
-  extracts, and `runRevealFix` which currently marks the walk-through seen after
-  any successful fix. The measurable check `isMeasurable(trueDist, fix.accuracyM)`
-  already gates persistence in `persistReveal`.
+### Files to touch
 
-### Data model / migrations
-None. There is no server and no database. The sample is stateless (nothing is
-read or written for it). The only first-run state is the existing
-`localStorage` key `ic_seen_walkthrough` (values `"1"` / absent), whose shape is
-unchanged. No migration applies.
+| File | Why |
+| --- | --- |
+| `src/screens/RevealMeasurement.tsx` | Heading level made caller-controlled (findings A, B) |
+| `src/screens/Landing.tsx` | Pass the sample's heading level (A) |
+| `src/screens/GuessFlow.tsx` | Reveal heading in distance-only mode (B), readout live-region fix (C), focus and announcement on phase change (D) |
+| `src/screens/GuessFlow.module.css` | Only if the focus fix needs a style hook |
+| `src/screens/Record.tsx` | Chart dot fix (E) |
+| `src/screens/Record.module.css` | Chart dot fix (E), if done in CSS |
+| `src/shell/Shell.module.css`, `src/styles/global.css`, `index.html` | `100dvh` with `100vh` fallback (F) |
+| `src/screens/Landing.module.css` | Remove dead styles (G) |
+| `docs/quality-pass.md` | New report artifact (all measurements) |
+| Test files beside each changed component | Prove the fixes (test plan below) |
 
-### New module: `src/game/sampleGuess.ts` (+ `sampleGuess.test.ts`)
-Pure, no I/O. Holds the built-in scenario and computes the measurement so the
-landing renders real numbers, and so the "non-zero, measurable, honest" guarantee
-is unit-testable away from the DOM.
+Anything user-visible the audits in tasks 2 to 5 turn up beyond findings A
+to G is fixed in the same files it lives in, under the same non-goals.
 
-```ts
-// A fixed, believable scenario: someone standing at `current` guessed the way
-// back to `start`. Coordinates chosen so the truth is clearly non-zero and
-// measurable, the bearing error is real but not humiliating, and the distance
-// guess is honestly off. These are demo constants, not user data.
-export const SAMPLE_GUESS = {
-  current: { lat: 40.0, lng: -74.0 },      // where the sample walker is now
-  start: { lat: 40.003, lng: -73.996 },    // the spot they are guessing back to
-  guessedBearingDeg: 20,                    // they guessed roughly north-northeast
-  guessedDistanceM: 650,                    // they guessed long
-  fixAccuracyM: 8,                          // a good fix, so the reveal is measurable
-  floorDeg: 10,                             // a decent compass margin
-} as const;
+### Design decisions (so the implementer never guesses)
 
-export type SampleReveal = {
-  directionWord: string;      // compassPoint8(trueBearing)
-  bearing: BearingResult;     // describeBearing(errorDeg, floorDeg)
-  guessedDistanceM: number;
-  trueDistanceM: number;
-  distance: DistanceResult;   // describeDistance(guessedDistanceM, trueDistanceM)
-  measurable: boolean;        // must be true for the built-in constants
-};
+**RevealMeasurement heading (A, B).** Add an optional `headingLevel` prop
+(default `"h1"`, accepted values `"h1" | "h2" | "h3"`) and render the bucket
+headline with that element. `Landing.tsx` passes `"h3"` so the sample sits
+under its `<h2>`. Visual size stays exactly as today: the existing
+`styles.headline` class carries the look, whatever the element. For B, when
+`bearing` is null, `RevealMeasurement` renders the direction line as the
+headline element with the same `headingLevel` (text stays "It was to the
+{word}."), so every reveal has a heading in both modes. No other caller or
+word changes.
 
-export function computeSampleReveal(): SampleReveal;
-```
+**Readout live region (C).** Remove `aria-live` from the streaming readout.
+Announce the discrete moment instead: the locked state ("Locked N°") lives
+in an element with `aria-live="polite"`. The visual behavior is unchanged.
 
-- `computeSampleReveal` derives `trueBearing = initialBearingDeg(current, start)`
-  and `trueDist = haversineDistanceM(current, start)`, then
-  `bearingErrorDeg(guessedBearingDeg, trueBearing)`,
-  `describeBearing(error, floorDeg)`, `compassPoint8(trueBearing)`, and
-  `describeDistance(guessedDistanceM, trueDist)`. It reuses the shared functions;
-  it must NOT reimplement any scoring or geometry.
-- With the constants above the outcome is, approximately: truth to the
-  **northeast**, bearing error about **26°** (bucket `Close`, comfortably above
-  the 10° floor so a concrete degrees-off number shows), true distance about
-  **477 m** against a **650 m** guess (ratio about 1.36, verdict `long`), and
-  `measurable === true`. The tests assert these as properties and with tolerance,
-  not to the last digit (the engine is the source of the exact values).
+**Phase focus (D).** When the phase enters `reveal` or `error`, move focus
+programmatically to the reveal container (give it `tabIndex={-1}`) or to its
+heading. Do the same when `guess` replaces `setup`. Use an effect keyed on
+`phase`. No focus juggling inside a phase. This both restores keyboard
+context and makes screen readers read the new content, which also resolves
+the missing announcement half of D.
 
-### New shared component: extract `RevealMeasurement`
-Extract the measurement body from `GuessFlow`'s `Reveal` into a small
-presentational component so the live reveal and the sample render identical
-words. Recommended location `src/screens/RevealMeasurement.tsx` (+ a module CSS,
-or reuse `GuessFlow.module.css` classes if kept in that folder). It renders the
-already-shipped markup with no behavior change:
+**Chart dots (E).** Keep `preserveAspectRatio="none"` for the line geometry
+and stop drawing dots as SVG-scaled circles: either give circles
+`vector-effect: non-scaling-stroke` with stroke-based rendering, or compute
+an x-radius compensation, or (simplest, preferred) drop
+`preserveAspectRatio="none"` and size the viewBox to the rendered aspect
+per chart so nothing distorts. Pick the smallest change that makes dots
+round at 390px and at the max content width; the report records which.
 
-- Props: `bearing: BearingResult | null`, `directionWord: string`,
-  `guessedDistanceM: number | null`, `trueDistanceM: number`, and
-  `showCompassCaption?: boolean` (default `true`).
-- Renders exactly what `Reveal` renders today for the measurable branch: the
-  bucket headline (when `bearing`), `It was to the {word}.`, the within-floor
-  detail OR `{n}° off.`, the compass caption `Your compass reads to about ±{n}°.`
-  (only when `showCompassCaption`), and the distance block
-  (`You guessed {guess}. It was {truth}.` plus the verdict line).
-- It renders ONLY the measurement. The nudge, `Guess again` / `New start`
-  actions, and the `See your record` link stay in `GuessFlow` and are NOT part of
-  this component.
-- `GuessFlow`'s `Reveal` now composes `RevealMeasurement` (with
-  `showCompassCaption` = true) plus its nudge/actions. The rendered DOM for the
-  live reveal is unchanged, so every existing `GuessFlow.test.tsx` assertion
-  (bucket text, direction text, `Your compass reads to about ±12°.`, distance
-  line) stays green. If any existing string moves, it must move verbatim.
+**Viewport height (F).** `min-height: 100vh;` immediately followed by
+`min-height: 100dvh;` in the same rule, in `global.css` (`html, body`,
+`#root`), `Shell.module.css` (`.shell`), and the inline boot styles in
+`index.html`. Old browsers ignore the second line.
 
-### Landing sample (`src/screens/Landing.tsx` + `Landing.module.css`)
-Add the sample below the existing primary action, visibly subordinate to it
-(QUALITY BAR §7: one obvious primary action; the sample is secondary).
+**The report (`docs/quality-pass.md`).** One markdown file, written for a
+stranger, with these sections: build size table (each emitted asset, raw and
+gzip), first-render verification, interaction-feedback verification, bounded
+work verification, 390px screen-by-screen table, designed-states inventory,
+contrast table, keyboard walk, copy sweep record (patterns run, files
+covered, hits and fixes), and the time-to-first-reveal measurements. It
+states the method next to every number (what was run, on what build). It is
+plain prose and tables, no factory jargon, and it follows the same copy
+rules as the product.
 
-- Keep the current `h1` `The Inner Compass`, the tagline, and the primary link
-  `Start a walk` to `/guess` exactly as they are (existing Landing tests must
-  stay green).
-- Add a subordinate `Try a sample guess` control. A `<button type="button">`
-  styled as a secondary/subtle action, not a second primary. It gives pressed
-  feedback within 100ms (CSS `:active`), and it is keyboard reachable with a
-  visible focus ring and a tap target ≥ 44px.
-- On click, set local state `showSample = true` and render the sample panel
-  inline below (a purely synchronous, client-side reveal). The panel:
-  - an `h2` `A sample guess`,
-  - one intro line `Here is a real guess scored against the truth.`,
-  - the `RevealMeasurement` for `computeSampleReveal()`, passed
-    `showCompassCaption={false}` (the landing has no device compass, so the
-    device-specific caption is omitted; the concrete `{n}° off.` line still
-    shows because the sample's error exceeds its floor),
-  - a subordinate closing line `Now measure your own.` that points the user back
-    up to the primary `Start a walk`. Do not add a second `Start a walk` control.
-- The panel reuses `.resultCard` (or an equivalent existing card token). Mobile
-  first: single column within `--content-max`, usable at 390px with no
-  horizontal scroll, labels ≥ 12px, sufficient contrast.
-- The sample never persists and never touches `ic_seen_walkthrough`. It is a
-  read-only render of built-in data.
+### Data model and API
 
-### Guided-path retire fix (`src/screens/GuessFlow.tsx`)
-Today `runRevealFix` calls `markWalkthroughSeen()` after any successful fix,
-including a barely-moved (non-measurable) reveal. Align the retire event with the
-"first completed real guess":
-
-- Compute measurability once for the reveal (the same
-  `isMeasurable(trueDist, fix.accuracyM)` the persistence path uses) and gate BOTH
-  the record append AND the walk-through retire on it. The cleanest shape: have
-  `persistReveal` (or a small helper) return whether the reveal was measurable,
-  and in `runRevealFix` mark the walk-through seen only when it was.
-- A measurable reveal: append the row (unchanged) AND, if unseen, mark seen and
-  set `seenWalkthrough`. A barely-moved reveal: append nothing (unchanged) AND
-  leave the walk-through available, so the next real attempt still guides the
-  user.
-- The explicit `Skip` path (`skipWalkthrough`) is unchanged: skipping retires the
-  walk-through immediately and permanently.
-- Do not add steps, do not change the four step sentences, and do not change the
-  `showWalkthrough` visibility rule. The path already satisfies "at most four
-  one-sentence steps, each pinned to a real control, skippable, shown only until
-  first success". This fix only corrects the retire timing.
-
-### Routing / nav
-No route changes. The sample is inline on `/`. Do not add a `/sample` route or
-any nav entry.
-
-### Staging reachability (SEED_DEMO)
-No STAGING DEPLOY CONTRACT block was supplied to this spec. For this static,
-account-less SPA there is no server-side data to seed, so the SEED_DEMO intent
-("the deployed app shows its differentiator within a minute without hand-crafted
-input") is met entirely by the built-in sample: the landing at `/` is the first
-route, renders instantly as static content, and the sample is one tap away with a
-synchronous compute. If a STAGING DEPLOY CONTRACT with a `SEED_DEMO` variable is
-present at deploy time, the built-in sample already satisfies it. Do not add a
-backend to honor it.
-
-### Security / privacy (client-only app)
-No server routes, no auth surface, no accounts, no new input boundary (the sample
-takes no user input). The sample uses built-in demo constants, not the user's
-location, so no coordinates of the user are involved. Do not log the sample or
-the walk-through state. No PII in logs. No network call is added.
+No changes. No migrations. The stored guess shape, the record file format,
+the walkthrough flag, and all routes stay exactly as shipped.
 
 ---
 
-## Ordered task list
+## Ordered tasks
 
-**T1 — Extract `RevealMeasurement` from `GuessFlow`'s `Reveal`.**
-AC:
-- A presentational component renders the live reveal's measurement body (bucket
-  headline, `It was to the {word}.`, within-floor detail or `{n}° off.`, the
-  compass caption behind `showCompassCaption`, and the distance block with
-  verdict), and `GuessFlow`'s `Reveal` composes it.
-- The live reveal's rendered DOM and text are unchanged: every existing
-  `GuessFlow.test.tsx` assertion still passes.
+### Task 1: Accessibility fixes (findings A, B, C, D)
 
-**T2 — Built-in sample module `src/game/sampleGuess.ts` (+ tests).**
-AC:
-- `SAMPLE_GUESS` constants and `computeSampleReveal()` exported.
-- `computeSampleReveal()` returns `measurable === true`, a bearing error strictly
-  greater than 0 and greater than `SAMPLE_GUESS.floorDeg` (so a concrete
-  degrees-off number shows), a true distance strictly greater than 0, and a
-  distance verdict that is not `spot_on` (a real over- or under-estimate).
-- It reuses `geoMath` / `scoring`; it contains no reimplemented geometry or
-  scoring.
+Do the four concrete fixes per the design decisions above.
 
-**T3 — Landing sample (`src/screens/Landing.tsx` + `Landing.module.css`).**
-AC:
-- The landing keeps its `h1`, tagline, and single primary `Start a walk` link.
-- A subordinate `Try a sample guess` button is present, keyboard reachable, tap
-  target ≥ 44px, with pressed feedback.
-- Clicking it reveals the sample panel: heading `A sample guess`, intro line, the
-  `RevealMeasurement` for the built-in sample (compass caption hidden), and the
-  closing line. The panel shows a non-zero degrees-off number and a real distance
-  line with a verdict.
-- The sample renders synchronously (no async, no location, no sensor) and writes
-  nothing to storage.
+**Acceptance criteria:**
+1. On `/`, with the sample open, the document has exactly one `<h1>` (the
+   landing title) and heading levels never skip backward under it: the
+   sample panel is `<h2>` and the bucket headline inside it is `<h3>`.
+2. On `/guess` in bearing mode, the reveal's bucket headline is the screen's
+   `<h1>`. In distance-only mode the reveal still has an `<h1>` (the
+   direction line). No reveal renders without a heading.
+3. The streaming readout has no `aria-live` attribute. The locked bearing
+   confirmation is announced via a polite live region.
+4. After `Reveal` is tapped, when the reveal (or the error card) renders,
+   focus is on the new content's container or heading, verifiable with
+   `document.activeElement` in a component test. Same when setup advances
+   to guess.
+5. Every existing test still passes; the visual appearance of headline,
+   readout, and locked row is unchanged (same classes, same text).
 
-**T4 — Guided-path retire fix (`src/screens/GuessFlow.tsx`).**
-AC:
-- A measurable reveal retires the walk-through (sets `ic_seen_walkthrough`); a
-  barely-moved reveal does not.
-- `Skip` still retires it immediately.
-- The four step sentences, the step count, and the `showWalkthrough` visibility
-  rule are unchanged.
+### Task 2: Layout fixes at 390px and viewport height (findings E, F)
 
-**T5 — Tests, copy sweep, README, full build.**
-AC:
-- The unit and component tests in the Test plan pass.
-- Copy sweep passes on every string this EPIC adds or edits.
-- `README.md` gains a short, plain mention of the sample guess and the guided
-  first run (for strangers, no pipeline jargon).
-- `npm run build` and `npm test` both pass.
+Fix the chart dot distortion and the `100vh` usage, then verify every screen
+at 390px.
+
+**Acceptance criteria:**
+1. Chart data points render round (not stretched) at 390px and at the max
+   content width, on both the distance and bearing charts.
+2. `html`/`body`, `#root`, the shell, and the boot styles use `100dvh` with
+   a `100vh` fallback line before it.
+3. A screen-by-screen check at a 390px viewport is recorded in the report,
+   covering: landing (sample closed and open), guess flow in every phase
+   (setup, setup loading, setup error, guess in bearing mode with
+   walkthrough, guess in distance-only mode, fixing, reveal measurable,
+   reveal barely-moved, reveal error), record (empty, populated, import
+   confirm, import error), and the crash fallback. For each: no horizontal
+   scroll, all interactive targets at least 44px in the pressable
+   dimension, no text requiring zoom. Any failure found is fixed in this
+   task and re-checked.
+
+### Task 3: Designed-states inventory (verification, fixes only if a gap shows)
+
+Enumerate every empty, loading, and error state in the product and verify
+each against the bar: empty states say what the screen is for and what to do
+first, loading states hold layout, error states say what happened and what
+to do next in the product's voice.
+
+The known inventory to verify (extend it if the audit finds more): record
+empty state, bearing-chart empty state, signature below-threshold state,
+setup loading, fixing loading, the four `FIX_ERROR_COPY` geolocation errors
+(as both setup and reveal errors), barely-moved reveal, import parse error,
+import replace confirm, and the crash fallback.
+
+**Acceptance criteria:**
+1. The report contains the full inventory as a table: state, where it
+   lives, what it says, and pass/fail against the three rules above.
+2. Every state passes; any that failed was fixed in this task and the fix
+   is covered by a component test asserting the designed copy renders.
+3. No blank regions and no raw error text anywhere: the crash fallback
+   shows no stack trace or error code (already true; verified and
+   recorded).
+
+### Task 4: Copy sweep, mechanical and recorded (finding H)
+
+Run the mechanical sweep over every user-visible string in the repo:
+`src/**` (components, copy constants in `src/game/nudges.ts`,
+`src/game/scoring.ts`, `src/record/signature.ts`, `FIX_ERROR_COPY`),
+`index.html` (title, meta description, boot copy), `README.md`, `LICENSE` is
+exempt, and `docs/sensor-verification.md`.
+
+Patterns: the characters "—" and "–"; " - " as a sentence break; the banned
+vocabulary list from the quality bar ("seamlessly", "effortlessly",
+"unlock", "elevate", "empower", "leverage", "robust", "dive in", and kin);
+negative empty-state phrasing ("You don't have", "No … yet", "Nothing …
+here", "Unable to", "Something went wrong").
+
+Code comments, test names, and non-UI strings are exempt, but every string a
+user can read in the product or on the public repo page is in.
+
+**Acceptance criteria:**
+1. The report records the exact patterns run, the file set covered, every
+   hit, and its resolution. User-visible hits are all fixed; exempt hits
+   are listed as exempt with their location.
+2. After fixes, re-running the sweep over user-visible strings yields zero
+   hits.
+3. The report itself and this spec's quoted copy pass the same sweep.
+
+### Task 5: Perceived speed, measured on the production build (finding I)
+
+Build for production and measure. Serve the built app (Docker image or
+`vite preview`; the report says which) and record:
+
+1. Every emitted asset with raw and gzip size.
+2. That the static boot paint (`index.html` content) renders real styled
+   content before the module bundle executes, verified by loading with
+   JS disabled or by inspecting the document before hydration.
+3. That every interactive control gives feedback within 100ms: pressed
+   states are pure CSS (`:active`), all click handlers on hot paths are
+   synchronous or flip visible state immediately (the reveal tap flips to
+   the `fixing` spinner before awaiting the fix). Verified by code
+   inspection and recorded per control group.
+4. Bounded work on every hot path: `MAX_STORED_GUESSES` cap in
+   `src/record/store.ts`, `PAGE_SIZE` pagination and `CHART_WINDOW` in
+   `Record.tsx`, and no network calls anywhere in the loop. Recorded with
+   the constants' values.
+5. First meaningful render timed on a cold load of the production build
+   (devtools performance panel or equivalent; method stated). Target:
+   about 1 second on an ordinary connection. The report states the
+   measured number and the connection assumption.
+
+**Acceptance criteria:**
+1. All five measurements appear in the report with method noted.
+2. First meaningful render meets the target, or the overage is fixed
+   within this EPIC's non-goals and re-measured.
+3. No production dependency was added and the built bundle did not grow
+   beyond noise from this EPIC's own fixes (before and after sizes in the
+   report).
+
+### Task 6: Time-to-first-reveal, measured and reported
+
+Measure the differentiator's claim on the production build, two paths:
+
+1. **Sample path (no walk):** cold load of `/` to a scored sample
+   measurement on screen. Record elapsed time and tap count (expected: one
+   tap, well under ten seconds including load).
+2. **Real path (the loop):** cold load to a committed real reveal,
+   excluding walking time, which the app does not control. Record the tap
+   and input count and the app-attributable time (loads, fixes, transitions;
+   geolocation fix time recorded as measured, with the strict timeout from
+   `src/sensors/geolocation.ts` noted as the worst case).
+
+**Acceptance criteria:**
+1. Both measurements are in the report with method, device or environment,
+   and numbers.
+2. The sample path plus the app-attributable real path each land under one
+   minute; the report states the comparison against the target explicitly.
+3. If either misses, the miss is fixed within this EPIC's non-goals and
+   re-measured, or the run reports failure. Never report around a miss.
+
+### Task 7: Dead style removal and final sweep (finding G)
+
+Remove `.status`, `.statusText`, and `.mode` from `Landing.module.css`
+(after confirming nothing references them). Then run the full test suite and
+the copy sweep one final time over everything this EPIC touched, and finish
+the report.
+
+**Acceptance criteria:**
+1. No CSS module rule in the repo is unreferenced by its component (spot
+   check the three named; grep class usage for the rest of the touched
+   files).
+2. `npm test` and `npm run build` both pass clean.
+3. `docs/quality-pass.md` is complete per the design section, passes its
+   own copy sweep, and is listed in the run's artifacts.
 
 ---
 
-## Test plan (each acceptance criterion → the test that proves it)
+## Test plan
 
-Run the whole suite with `npm test` (Vitest, jsdom). Render Landing and GuessFlow
-inside `MemoryRouter`, following the existing `Landing.test.tsx` /
-`GuessFlow.test.tsx` patterns. Clear `localStorage` around GuessFlow tests
-(existing `beforeEach`/`afterEach` already do).
+Automated tests prove every behavior change; the report carries what
+automation cannot reach (layout at real widths, timings, contrast numbers).
 
-**AC: the landing states what the app does and offers one obvious primary action;
-the sample yields a real reveal with non-zero bearing and distance.**
-`sampleGuess.test.ts` — `computeSampleReveal()` returns `measurable === true`,
-`bearing.errorDeg > SAMPLE_GUESS.floorDeg` (and `> 0`), `trueDistanceM > 0`, and
-`distance.verdict !== "spot_on"`. Assert the approximate expected values with
-tolerance (direction `northeast`; error near 26°; true distance near 477 m;
-verdict `long`) so a regression in the constants is caught without pinning exact
-digits.
-`Landing.test.tsx` — the existing assertions (the `h1`, the tagline, the single
-`Start a walk` primary link to `/guess`) still pass. New: clicking
-`Try a sample guess` renders the sample panel; assert a concrete degrees-off
-string (`/\d+° off\./`) and a distance line (`/You guessed .* It was .*/`) are in
-the panel, and that the panel is absent before the click. Assert no coordinates,
-sensor, or storage were touched (the record store stays empty:
-`loadGuesses()` is `[]`).
+**New or extended component tests (Vitest + Testing Library):**
 
-**AC: the guided path is at most four one-sentence steps pinned to real controls,
-skippable, and disappears permanently after the first completed real guess and
-for returning users.**
-`GuessFlow.test.tsx` (extend the existing `guided first run` block) —
-- Step count and shape: the walk-through renders at most four steps, each a
-  single short imperative sentence (assert the four known step texts render and
-  no fifth list item exists). The controls they name are present in the flow
-  (`Mark this spot` / distance input / `Lock direction` / `Reveal`, matching the
-  `data-step` attributes).
-- Skippable: clicking `Skip` hides the walk-through and sets
-  `ic_seen_walkthrough` to `"1"` (existing test).
-- Returning user: with `ic_seen_walkthrough` preset, the walk-through never
-  renders (existing test).
-- Retires on the first completed real guess: after a *measurable* reveal the flag
-  is set and the walk-through does not return on remount (existing test, still
-  valid).
-- New — does NOT retire on a barely-moved reveal: drive a barely-moved reveal
-  (reveal fix at the anchor, as in the barely-moved-guard test) with the
-  walk-through unseen; assert `ic_seen_walkthrough` is still absent afterward and
-  the walk-through is still available (e.g. remount in `setup`/`guess` shows the
-  first step). This proves the retire event is the real guess, not any reveal.
+- `Landing.test.tsx`: with the sample open, exactly one `h1` in the
+  document; the bucket headline is an `h3`; heading order is 1, 2, 3
+  (Task 1, criteria 1).
+- `GuessFlow.test.tsx`:
+  - Bearing-mode reveal renders the bucket as `h1`; distance-only reveal
+    renders an `h1` containing the direction line (Task 1, criteria 2).
+  - The streaming readout element has no `aria-live`; after locking, the
+    locked confirmation lives in an `aria-live="polite"` region (Task 1,
+    criteria 3).
+  - After a successful reveal fix, `document.activeElement` is inside the
+    reveal; after a failed fix, inside the error card; after setup
+    completes, inside the guess phase (Task 1, criteria 4).
+  - Every `FIX_ERROR_COPY` string and the barely-moved copy still render
+    verbatim (guards Task 3 and Task 4 against regression; several of
+    these assertions already exist and must stay green).
+- `Record.test.tsx`: chart SVGs match the chosen non-distorting rendering
+  (assert the attribute or class that implements the Task 2 fix); empty
+  state, import error, and confirm copy render verbatim.
+- Any copy string changed by the sweep gets its rendering test updated in
+  the same commit, so the sweep result is pinned.
 
-**AC: the live reveal is unchanged by the extraction.**
-`GuessFlow.test.tsx` — the full existing suite (commit gate, bearing path,
-distance-only path, fixing/error states, barely-moved guard, nudges, persistence,
-`See your record` link, commit validation) passes without edits to its
-assertions.
+**Existing suite:** the full `npm test` run stays green; no existing
+assertion is deleted to make a fix pass. `npm run build` (which runs
+`tsc --noEmit`) passes.
 
-**AC: on a fresh staging deploy with no input, the sample is reachable within a
-minute.**
-Proven structurally rather than by a timer: the sample is on `/` (the first
-route), renders from built-in constants with no async, location, sensor, or
-network, and `Landing.test.tsx` reaches the scored measurement with a single
-click and no mocks of geolocation or headings. Note the manual staging check (open
-the deployed URL, tap `Try a sample guess`, see a scored measurement) in the run
-summary; the DOM test is the automated proxy.
-
-**AC: copy sweep passes.**
-Mechanical + read-aloud sweep of every string this EPIC adds or edits (the
-`Try a sample guess` button, the `A sample guess` heading, the sample intro and
-closing lines, any moved reveal strings, the README additions): no `—` or `–`;
-none of the banned LLM vocabulary; no negative empty-state phrasing (`You don't
-have`, `No … yet`, `Nothing … here`, `Unable to`, `Something went wrong`); no
-tutorial-essay padding. Record the sweep result in the run summary.
+**Report-carried verification (method stated in the report for each):**
+390px screen table (Task 2), designed-states inventory (Task 3), sweep
+record (Task 4), asset sizes, boot paint, first-render timing (Task 5),
+and both time-to-first-reveal measurements (Task 6). Contrast ratios for
+every token pair used on text (`--text` and `--text-muted` on `--bg`,
+`--surface`, `--surface-raised`; `--accent-contrast` on `--accent`;
+`--danger` on `--bg` and `--surface`; `--accent` on `--surface`) computed
+and tabled; every pair meets WCAG AA for its text size or is fixed.
 
 ---
 
-## Copy inventory (ship verbatim — already swept)
+## Done means
 
-Landing sample:
-- sample toggle button `Try a sample guess`
-- sample panel heading `A sample guess`
-- sample intro line `Here is a real guess scored against the truth.`
-- sample closing line `Now measure your own.`
+Every planner criterion maps to a task and lands in code or in
+`docs/quality-pass.md`:
 
-Reused verbatim from the live reveal (via `RevealMeasurement`, already swept):
-- direction line `It was to the {word}.`
-- degrees-off line `{n}° off.`
-- distance line `You guessed {guess}. It was {truth}.`
-- verdict lines `Spot on.` / `You guessed short.` / `You guessed long.`
-- bucket headlines `Dead on` / `Close` / `Off by a bit` / `Well off` /
-  `Turned around`
+| Planner criterion | Where it is proven |
+| --- | --- |
+| Perceived speed verified (about 1s first render, 100ms feedback, bounded work) | Task 5, report sections 1 to 5 |
+| Mobile-first verified at 390px on every screen | Task 2, report screen table |
+| Every empty, loading, error state designed and in-voice | Task 3, inventory table plus tests |
+| Accessibility basics pass | Tasks 1 and 2, contrast table, keyboard walk in report |
+| Full copy sweep, zero hits | Task 4, sweep record |
+| Time-to-first-reveal measured against under-a-minute | Task 6, report |
 
-Guided path (already shipped, unchanged, listed for the sweep record):
-- steps `Mark where you are standing now.`,
-  `Walk somewhere, then open this again.`,
-  `Point your phone back at your start and lock it.` /
-  `Guess how far you walked.` (distance-only),
-  `Type the distance, then tap Reveal.`
-- skip button `Skip`
-
-All strings above contain no em-dashes or en-dashes, no banned LLM vocabulary, no
-negative empty-state phrasing, and no improvement promise. The sample describes a
-fixed scenario scored by the real engine; it never flatters and never claims the
-viewer is improving. Sweep every string again if you edit any of them.
+The run's artifacts are the code changes, the updated tests, and
+`docs/quality-pass.md`. Nothing new faces the user except better versions of
+what already shipped.

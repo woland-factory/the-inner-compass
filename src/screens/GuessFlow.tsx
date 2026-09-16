@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   detectHeadingCapability,
@@ -97,6 +97,22 @@ export function GuessFlow() {
   const [nudgeIndex, setNudgeIndex] = useState(0);
 
   const [seenWalkthrough, setSeenWalkthrough] = useState(hasSeenWalkthrough);
+
+  const guessRef = useRef<HTMLDivElement>(null);
+  const revealRef = useRef<HTMLDivElement>(null);
+
+  // A phase change unmounts the old subtree, so focus would fall to <body> and
+  // nothing would announce the new content. Move focus to the incoming
+  // container: this restores keyboard context and lets a screen reader read the
+  // reveal or error that just arrived. Keyed on phase only, so there is no
+  // focus juggling inside a phase.
+  useEffect(() => {
+    if (phase === "reveal" || phase === "error") {
+      revealRef.current?.focus();
+    } else if (phase === "guess") {
+      guessRef.current?.focus();
+    }
+  }, [phase]);
 
   const distanceM = parseDistanceM(distanceRaw, unit);
   const canCommit =
@@ -275,6 +291,7 @@ export function GuessFlow() {
 
       {phase === "guess" && (
         <GuessPhase
+          containerRef={guessRef}
           mode={guessMode}
           liveHeading={liveHeading}
           lockedBearing={lockedBearing}
@@ -298,7 +315,13 @@ export function GuessFlow() {
       )}
 
       {(phase === "reveal" || phase === "error") && (
-        <div className={styles.reveal} data-testid="reveal" data-mode={guessMode}>
+        <div
+          ref={revealRef}
+          tabIndex={-1}
+          className={styles.reveal}
+          data-testid="reveal"
+          data-mode={guessMode}
+        >
           {phase === "error" && revealError && (
             <FixError
               reason={revealError}
@@ -367,6 +390,7 @@ function SetupPhase(props: {
 }
 
 function GuessPhase(props: {
+  containerRef: React.Ref<HTMLDivElement>;
   mode: GuessMode;
   liveHeading: number;
   lockedBearing: number | null;
@@ -381,14 +405,19 @@ function GuessPhase(props: {
   onReveal: () => void;
 }) {
   return (
-    <div className={styles.guess} data-mode={props.mode}>
+    <div
+      ref={props.containerRef}
+      tabIndex={-1}
+      className={styles.guess}
+      data-mode={props.mode}
+    >
       {props.mode === "bearing" ? (
         <div className={styles.bearing}>
           <h1 className={styles.heading}>Point your phone at it and lock it in.</h1>
           <Dial degrees={props.lockedBearing ?? props.liveHeading} />
           {props.lockedBearing === null ? (
             <>
-              <p className={styles.readout} aria-live="polite">
+              <p className={styles.readout}>
                 {Math.round(props.liveHeading)}°
               </p>
               <button
@@ -409,7 +438,7 @@ function GuessPhase(props: {
             </>
           ) : (
             <div className={styles.lockedRow}>
-              <span className={styles.locked}>
+              <span className={styles.locked} aria-live="polite">
                 Locked {Math.round(props.lockedBearing)}°
               </span>
               <button

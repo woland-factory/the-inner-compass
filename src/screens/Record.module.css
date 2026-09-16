@@ -127,8 +127,13 @@
   vector-effect: non-scaling-stroke;
 }
 
+/* A zero-length line with a round cap draws a dot. Non-scaling stroke keeps it
+   a true circle even though the SVG stretches to fill its box. */
 .dataPoint {
-  fill: var(--accent);
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 6;
+  stroke-linecap: round;
 }
 
 .baselineLabel {

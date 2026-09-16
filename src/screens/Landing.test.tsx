@@ -75,6 +75,26 @@ describe("Landing", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("keeps a single h1 and a non-skipping outline with the sample open", () => {
+    renderLanding();
+    fireEvent.click(screen.getByRole("button", { name: "Try a sample guess" }));
+
+    // Exactly one h1 on the app's front door: the landing title.
+    const h1s = screen.getAllByRole("heading", { level: 1 });
+    expect(h1s).toHaveLength(1);
+    expect(h1s[0]).toHaveTextContent("The Inner Compass");
+
+    // The sample panel is h2, and the bucket headline inside it is h3, so the
+    // outline reads 1, 2, 3 without skipping backward.
+    expect(
+      screen.getByRole("heading", { level: 2, name: "A sample guess" }),
+    ).toBeInTheDocument();
+    const h3 = screen.getByRole("heading", { level: 3 });
+    // The bucket headline from the real engine (for example "Close").
+    expect(h3.textContent).toBeTruthy();
+    expect(h3).toHaveTextContent(/^[A-Z]/);
+  });
+
   it("stores nothing when the sample is revealed", () => {
     renderLanding();
     fireEvent.click(screen.getByRole("button", { name: "Try a sample guess" }));

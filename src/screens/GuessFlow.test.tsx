@@ -503,6 +503,84 @@ describe("GuessFlow persistence", () => {
   });
 });
 
+describe("GuessFlow accessibility", () => {
+  it("makes the bearing reveal bucket the screen's h1", async () => {
+    renderFlow();
+    await reachGuess(COMPASS_OK, "home");
+    fireEvent.click(screen.getByRole("button", { name: "Lock direction" }));
+    typeDistance("100");
+    getPos.mockResolvedValueOnce(REVEAL_FIX);
+    fireEvent.click(screen.getByRole("button", { name: "Reveal" }));
+    await screen.findByTestId("reveal");
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Off by a bit" }),
+    ).toBeInTheDocument();
+  });
+
+  it("gives the distance-only reveal an h1 on the direction line", async () => {
+    renderFlow();
+    await reachGuess({ state: "absent", source: "none" }, "spot");
+    typeDistance("100");
+    getPos.mockResolvedValueOnce(REVEAL_FIX);
+    fireEvent.click(screen.getByRole("button", { name: "Reveal" }));
+    const reveal = await screen.findByTestId("reveal");
+
+    const h1 = within(reveal).getByRole("heading", { level: 1 });
+    expect(h1).toHaveTextContent("It was to the west.");
+  });
+
+  it("keeps the streaming readout out of the live region, announcing the lock", async () => {
+    renderFlow();
+    await reachGuess(COMPASS_OK, "home");
+
+    // The live degree readout streams with the magnetometer, so it must not be
+    // a live region.
+    const readout = screen.getByText("0°");
+    expect(readout).not.toHaveAttribute("aria-live");
+
+    // Locking is the discrete moment worth announcing.
+    fireEvent.click(screen.getByRole("button", { name: "Lock direction" }));
+    const locked = screen.getByText("Locked 0°");
+    expect(locked).toHaveAttribute("aria-live", "polite");
+  });
+
+  it("moves focus to the incoming content on each phase change", async () => {
+    renderFlow();
+
+    // setup -> guess lands focus inside the guess phase.
+    await reachGuess(COMPASS_OK, "home");
+    expect(
+      document.activeElement?.contains(
+        screen.getByLabelText("How far away is it?"),
+      ),
+    ).toBe(true);
+
+    // guess -> reveal lands focus inside the reveal.
+    fireEvent.click(screen.getByRole("button", { name: "Lock direction" }));
+    typeDistance("100");
+    getPos.mockResolvedValueOnce(REVEAL_FIX);
+    fireEvent.click(screen.getByRole("button", { name: "Reveal" }));
+    const reveal = await screen.findByTestId("reveal");
+    expect(reveal.contains(document.activeElement)).toBe(true);
+  });
+
+  it("moves focus to the error card when the reveal fix fails", async () => {
+    renderFlow();
+    await reachGuess(COMPASS_OK, "home");
+    fireEvent.click(screen.getByRole("button", { name: "Lock direction" }));
+    typeDistance("100");
+    getPos.mockResolvedValueOnce({ ok: false, reason: "timeout" });
+    fireEvent.click(screen.getByRole("button", { name: "Reveal" }));
+
+    await screen.findByText(
+      "That took too long. Step into the open and tap Retry.",
+    );
+    const reveal = screen.getByTestId("reveal");
+    expect(reveal.contains(document.activeElement)).toBe(true);
+  });
+});
+
 describe("GuessFlow commit validation", () => {
   it("keeps Reveal disabled until a valid distance and a locked bearing", async () => {
     renderFlow();

@@ -280,12 +280,14 @@ function DistanceRatioChart(props: { guesses: StoredGuess[] }) {
           <polyline className={styles.dataLine} points={points} />
         )}
         {drawn.map((r, i) => (
-          <circle
+          <line
             key={i}
-            cx={xFor(i)}
-            cy={yFor(r)}
-            r={3}
+            x1={xFor(i)}
+            y1={yFor(r)}
+            x2={xFor(i)}
+            y2={yFor(r)}
             className={styles.dataPoint}
+            vectorEffect="non-scaling-stroke"
           />
         ))}
       </svg>
@@ -350,12 +352,14 @@ function BearingErrorChart(props: { guesses: StoredGuess[] }) {
           <polyline className={styles.dataLine} points={points} />
         )}
         {errors.map((e, i) => (
-          <circle
+          <line
             key={i}
-            cx={xFor(i)}
-            cy={yFor(e)}
-            r={3}
+            x1={xFor(i)}
+            y1={yFor(e)}
+            x2={xFor(i)}
+            y2={yFor(e)}
             className={styles.dataPoint}
+            vectorEffect="non-scaling-stroke"
           />
         ))}
       </svg>

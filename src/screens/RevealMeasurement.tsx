@@ -21,8 +21,10 @@ export function RevealMeasurement(props: {
   guessedDistanceM: number | null;
   trueDistanceM: number;
   showCompassCaption?: boolean;
+  headingLevel?: "h1" | "h2" | "h3";
 }) {
   const showCompassCaption = props.showCompassCaption ?? true;
+  const Heading = props.headingLevel ?? "h1";
   const bearing = props.bearing;
   const distance =
     props.guessedDistanceM !== null
@@ -31,8 +33,18 @@ export function RevealMeasurement(props: {
 
   return (
     <>
-      {bearing && <h1 className={styles.headline}>{bearing.bucket}</h1>}
-      <p className={styles.direction}>It was to the {props.directionWord}.</p>
+      {bearing ? (
+        <>
+          <Heading className={styles.headline}>{bearing.bucket}</Heading>
+          <p className={styles.direction}>It was to the {props.directionWord}.</p>
+        </>
+      ) : (
+        // Distance-only mode has no bucket, so the direction line carries the
+        // heading. Same class, same words: only the element changes.
+        <Heading className={styles.direction}>
+          It was to the {props.directionWord}.
+        </Heading>
+      )}
 
       {bearing &&
         (bearing.withinFloor ? (

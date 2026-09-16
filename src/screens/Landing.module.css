@@ -86,15 +86,6 @@
   line-height: 1.4;
 }
 
-/* Reserve space so switching from idle to checking to result holds layout. */
-.status {
-  min-height: 96px;
-}
-
-.statusText {
-  line-height: 1.4;
-}
-
 .resultCard {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -103,10 +94,4 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-}
-
-.mode {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  letter-spacing: 0.02em;
 }

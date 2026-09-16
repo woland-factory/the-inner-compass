@@ -95,6 +95,21 @@ describe("Record chart ordering and labels", () => {
     expect(bearingImg.getAttribute("aria-label")).toMatch(/bearing error/i);
   });
 
+  it("draws chart data points as non-scaling dots that stay round", () => {
+    seed(Array.from({ length: 8 }, (_, i) => row(i)));
+    const { container } = renderRecord();
+
+    // Points are lines (zero-length, round-capped) with a non-scaling stroke,
+    // so the stretched viewBox cannot turn them into ellipses. No <circle> that
+    // would distort survives.
+    expect(container.querySelector("circle")).toBeNull();
+    const points = container.querySelectorAll(
+      'line[vector-effect="non-scaling-stroke"]',
+    );
+    // Eight bearing guesses plot on both the distance and the bearing chart.
+    expect(points.length).toBe(16);
+  });
+
   it("shows a positive note when there are no bearing-mode guesses", () => {
     seed(
       Array.from({ length: 6 }, (_, i) =>
